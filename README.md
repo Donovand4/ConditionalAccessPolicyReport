@@ -1,11 +1,9 @@
 # ConditionalAccessPolicyReport
 PowerShell Script used to create a report for Azure AD Conditional Access Policies.
-# SYNOPSIS
-    PowerShell Script used to generate Conditional Access Policies.
-    Created by: Donovan du Val
-    Date: 20 March 2020
+
 # DESCRIPTION
-    The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
+    The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant. 
+    The report will resolve all ID's used within the policies for users, groups, named locations and applications.
 # EXAMPLE
     Generates a report in the CSV and HTML format
     PS C:\> Generate-ConditionalAccessReport.ps1 -export All
