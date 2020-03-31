@@ -22,13 +22,15 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.0         Date Last Modified: 20 March 2020                   #  
+#   Version 1.0         Date Last Modified: 31 March 2020                   #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies.
     Created by: Donovan du Val
     Date: 20 March 2020
+    Updated: 31 March 2020
+    Changes: Improved Error Checking on Users and Groups.
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
@@ -68,6 +70,8 @@ Begin {
 
     write-host "Logging into Microsoft Graph" -ForegroundColor Green
 
+    
+
     if ((Connect-Graph -Scopes "Policy.Read.All","Directory.Read.All") -eq $null) 
     {
         write-host "Login Failed. Exiting......." -ForegroundColor Green
@@ -82,28 +86,73 @@ Begin {
     $Date = Get-Date -format dd-MMMM-yyyy
     $Filename = "ConditionalAccessReport - $($Date)"
 
-  function Report-DirectoryApps {
+    function Report-DirectoryApps {
+        param (
+            [Parameter(Mandatory=$true)]
+            [String[]]
+            $AppID
+        )
+        ($servicePrincipals | where-object {$_.AppID -eq $AppID}).AppDisplayName
+    }
+    
+    function Report-NamedLocations {
       param (
           [Parameter(Mandatory=$true)]
           [String[]]
-          $AppID
+          $ID
       )
-      ($servicePrincipals | where-object {$_.AppID -eq $AppID}).AppDisplayName
-  }
-  
-  function Report-NamedLocations {
-    param (
-        [Parameter(Mandatory=$true)]
-        [String[]]
-        $ID
-    )
-    switch ($ID) {
-        "00000000-0000-0000-0000-000000000000" { "Unknown Site" }
-        "All" {"All"}
-        Default {
-          ($namedLocations | where-object {$_.ID -eq $ID}).displayName}
+      switch ($ID) {
+          "00000000-0000-0000-0000-000000000000" { "Unknown Site" }
+          "All" {"All"}
+          Default {
+            ($namedLocations | where-object {$_.ID -eq $ID}).displayName}
+      }
     }
-  }
+    
+    function Report-Users {
+      param (
+          [Parameter(Mandatory=$true)]
+          [String[]]
+          $ID
+      )
+      switch ($ID) {
+          "GuestsOrExternalUsers" { "GuestsOrExternalUsers" }
+          "All" {"All"}
+          Default {
+              $user = (Get-MgUser -UserId "$($ID)" -erroraction SilentlyContinue).userprincipalname
+              if ($user)
+              {
+                  $user
+              } 
+              else{
+                  "LookingUpError-$($ID)"
+              }
+          }
+      }
+    }
+    
+    function Report-Groups {
+      param (
+          [Parameter(Mandatory=$true)]
+          [String[]]
+          $ID
+      )
+      switch ($ID) {
+          "GuestsOrExternalUsers" { "GuestsOrExternalUsers" }
+          "All" {"All"}
+          Default {
+              $group = (Get-MgGroup -GroupId "$($ID)" -erroraction silentlycontinue).displayname
+             if ($group)
+             {
+                  $group
+              }
+              else{
+                  "LookingUpError-$($ID)"
+              }
+          }
+      }
+    }
+    
 
   $Head = @"  
 <style>
@@ -156,10 +205,10 @@ process {
         "ID"  = $pol.id
         "createdDateTime" = if ($pol.createdDateTime){$pol.createdDateTime} else {"Null"}          
         "ModifiedDateTime"  = if ($pol.createdDateTime){$pol.createdDateTime} else {"Null"}
-        "UserIncludeUsers"  = if ($pol.UserIncludeUsers) {($pol.UserIncludeUsers | ForEach-Object{(Get-MgUser -UserId $_ ).userprincipalname}) -join ","} else {"Not Configured"} 
-        "UserExcludeUsers"  = if ($pol.UserExcludeUsers) {($pol.UserExcludeUsers | ForEach-Object{(Get-MgUser -UserId $_ ).userprincipalname}) -join ","} else {"Not Configured"} 
-        "UserIncludeGroups" = if ($pol.UserIncludeGroups) {($pol.UserIncludeGroups | ForEach-Object{(Get-MgGroup -GroupId $_ ).displayName}) -join ","} else {"Not Configured"}
-        "UserExcludeGroups" = if ($pol.UserExcludeGroups) {($pol.UserExcludeGroups | ForEach-Object{(Get-MgGroup -GroupId $_ ).displayName}) -join ","} else {"Not Configured"}
+        "UserIncludeUsers"  = if ($pol.UserIncludeUsers) {($pol.UserIncludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
+        "UserExcludeUsers"  = if ($pol.UserExcludeUsers) {($pol.UserExcludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
+        "UserIncludeGroups" = if ($pol.UserIncludeGroups) {($pol.UserIncludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
+        "UserExcludeGroups" = if ($pol.UserExcludeGroups) {($pol.UserExcludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
         "UserIncludeRoles"  = if ($pol.UserIncludeRoles) {($pol.UserIncludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
         "UserExcludeRoles" = if ($pol.UserExcludeRoles) {($pol.UserExcludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
         "ConditionSignInRiskLevels" = if ($pol.ConditionSignInRiskLevels) {$pol.ConditionSignInRiskLevels -join ","} else {"Not Configured"}
