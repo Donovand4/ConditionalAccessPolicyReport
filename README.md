@@ -7,7 +7,8 @@ PowerShell Script used to create a report for Azure AD Conditional Access Polici
 # Getting Started
     Below is a list of steps recommended to allow the report to authenticate and retrieve the information required.
     Steps:
-    1. Download and install the Microsoft Graph PowerShell module by launching a PowerShell Console as Administrator and execute the below command:        
+    1.  Download and install the Microsoft Graph PowerShell module by launching a PowerShell Console as Administrator 
+        and execute the below command:        
             Install-Module Microsoft.Graph
             
     2.  Launch a PowerShell Console
