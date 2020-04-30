@@ -85,7 +85,7 @@ Begin {
 
     if ((Connect-Graph -Scopes "Policy.Read.All","Directory.Read.All") -eq $null) 
     {
-        write-host "Login Failed. Exiting......." -ForegroundColor Green
+        write-host "Login Failed. Exiting......." -ForegroundColor Red
         sleep -Seconds 2
         Exit
     } 
@@ -215,7 +215,7 @@ process {
         "State" = $pol.state
         "ID"  = $pol.id
         "createdDateTime" = if ($pol.createdDateTime){$pol.createdDateTime} else {"Null"}          
-        "ModifiedDateTime"  = if ($pol.createdDateTime){$pol.createdDateTime} else {"Null"}
+        "ModifiedDateTime"  = if ($pol.createdDateTime){$pol.ModifiedDateTime} else {"Null"}
         "UserIncludeUsers"  = if ($pol.UserIncludeUsers) {($pol.UserIncludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
         "UserExcludeUsers"  = if ($pol.UserExcludeUsers) {($pol.UserExcludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
         "UserIncludeGroups" = if ($pol.UserIncludeGroups) {($pol.UserIncludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
