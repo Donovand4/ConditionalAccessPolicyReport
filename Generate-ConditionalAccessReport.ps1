@@ -22,7 +22,7 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.0         Date Last Modified: 20 March 2020                   #  
+#   Version 1.1         Date Last Modified: 15 October 2020                 #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
@@ -46,11 +46,15 @@
     Exports .html and .csv files that contains the Conditional Access policies.
 .NOTES
     The script will connect to the Microsoft Graph service and collect the required information. 
+    To install the latest modules:
+
+    Install-Module Microsoft.Graph -AllowClobber -Force
 .LINK
     Github 
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
     Microsoft Graph PowerShell Module
     https://www.powershellgallery.com/packages/Microsoft.Graph
+
 #>
 [CmdletBinding()]
 param (
@@ -59,15 +63,15 @@ param (
     $Export
   )
 #Requires -Version 5.1
-#Requires -Modules Microsoft.Graph.Identity.ConditionalAccess,Microsoft.Graph.Identity.ServicePrincipal,Microsoft.Graph.Users.User,Microsoft.Graph.Groups.Group,Microsoft.Graph.Identity.RoleManagement
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups ,Microsoft.Graph.Identity.RoleManagement
 Begin {    
     Clear-Host
     write-host "Importing the modules..."
-    Import-Module Microsoft.Graph.Identity.ConditionalAccess,Microsoft.Graph.Identity.ServicePrincipal,Microsoft.Graph.Users.User,Microsoft.Graph.Groups.Group,Microsoft.Graph.Identity.RoleManagement
+    Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups ,Microsoft.Graph.Identity.RoleManagement
 
     write-host "Logging into Microsoft Graph" -ForegroundColor Green
 
-    if ((Connect-Graph -Scopes "Policy.Read.All","Directory.Read.All") -eq $null) 
+    if ((Connect-MGGraph -Scopes "Policy.Read.All","Directory.Read.All") -eq $null) 
     {
         write-host "Login Failed. Exiting......." -ForegroundColor Red
         sleep -Seconds 2
@@ -148,6 +152,7 @@ Begin {
       }
     }
     
+    
 
   $Head = @"  
 <style>
@@ -185,49 +190,52 @@ header {
 process {
     Write-Host ""
     Write-host "Collecting Named Locations..." -ForegroundColor Green
-    $namedLocations = Get-MgConditionalAccessNamedLocation | Select-Object displayname,id
+    $namedLocations = Get-MgIdentityConditionalAccessNamedLocation | Select-Object displayname,id
 
     Write-Host "Collecting Service Principals..." -ForegroundColor Green
-    $servicePrincipals = Get-MgServicePrincipal -Top 999 | Select-Object AppDisplayName,AppId
+    $servicePrincipals = Get-MgServicePrincipal | Select-Object AppDisplayName,AppId
     Write-Host ""
     $Report = @()
 #Collects the conditional access policies using the mgconditionalaccesspolicy command.
-    foreach ($pol in (Get-MgConditionalAccessPolicy)) {
-        $Report += New-Object PSobject -Property @{
+$Report = @()
+#Collects the conditional access policies using the mgconditionalaccesspolicy command.
+foreach ($pol in (Get-MgIdentityConditionalAccessPolicy)) {
+    $Report += New-Object PSobject -Property @{
         "Displayname"  = $pol.displayName
         "Description"  = $pol.Description
         "State" = $pol.state
         "ID"  = $pol.id
         "createdDateTime" = if ($pol.createdDateTime){$pol.createdDateTime} else {"Null"}          
         "ModifiedDateTime"  = if ($pol.ModifiedDateTime){$pol.ModifiedDateTime} else {"Null"}
-        "UserIncludeUsers"  = if ($pol.Conditions.UserIncludeUsers) {($pol.Conditions.UserIncludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
-        "UserExcludeUsers"  = if ($pol.Conditions.UserExcludeUsers) {($pol.Conditions.UserExcludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
-        "UserIncludeGroups" = if ($pol.Conditions.UserIncludeGroups) {($pol.Conditions.UserIncludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
-        "UserExcludeGroups" = if ($pol.Conditions.UserExcludeGroups) {($pol.Conditions.UserExcludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
-        "UserIncludeRoles"  = if ($pol.Conditions.UserIncludeRoles) {($pol.Conditions.UserIncludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
-        "UserExcludeRoles" = if ($pol.Conditions.UserExcludeRoles) {($pol.Conditions.UserExcludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
+        "UserIncludeUsers"  = if ($pol.Conditions.Users.IncludeUsers) {($pol.Conditions.Users.IncludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
+        "UserExcludeUsers"  = if ($pol.Conditions.Users.ExcludeUsers) {($pol.Conditions.Users.ExcludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
+        "UserIncludeGroups" = if ($pol.Conditions.Users.IncludeGroups) {($pol.Conditions.Users.IncludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
+        "UserExcludeGroups" = if ($pol.Conditions.Users.ExcludeGroups) {($pol.Conditions.Users.ExcludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
+        "UserIncludeRoles"  = if ($pol.Conditions.Users.IncludeRoles) {($pol.Conditions.Users.IncludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
+        "UserExcludeRoles" = if ($pol.Conditions.Users.ExcludeRoles) {($pol.Conditions.Users.ExcludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
         "ConditionSignInRiskLevels" = if ($pol.Conditions.SignInRiskLevels) {$pol.Conditions.SignInRiskLevels -join ","} else {"Not Configured"}
         "ConditionClientAppTypes" = if ($pol.Conditions.ClientAppTypes) {$pol.Conditions.ClientAppTypes -join ","} else {"Not Configured"}
-        "PlatformIncludePlatforms"  = if ($pol.Conditions.PlatformIncludePlatforms) {$pol.Conditions.PlatformIncludePlatforms -join ","} else {"Not Configured"}
-        "PlatformExcludePlatforms"  = if ($pol.Conditions.PlatformExcludePlatforms) {$pol.Conditions.PlatformExcludePlatforms -join ","} else {"Not Configured"}
-        "DeviceStateIncludeStates"  = if ($pol.Conditions.DeviceStateIncludeStates) {$pol.Conditions.DeviceStateIncludeStates -join ","} else {"Not Configured"}
-        "DeviceStateExcludeStates"  = if ($pol.Conditions.DeviceStateExcludeStates) {$pol.Conditions.DeviceStateExcludeStates -join ","} else {"Not Configured"}
-        "ApplicationIncludeApplications" = if ($pol.Conditions.ApplicationIncludeApplications) {($pol.Conditions.ApplicationIncludeApplications | ForEach-Object {Report-DirectoryApps -AppID $_}) -join ","} else {"Not Configured"}
-        "ApplicationExcludeApplications" = if ($pol.Conditions.ApplicationExcludeApplications) {($pol.Conditions.ApplicationExcludeApplications | ForEach-Object {Report-DirectoryApps -AppID $_}) -join ","} else {"Not Configured"}
-        "ApplicationIncludeUserActions" = if ($pol.Conditions.ApplicationIncludeUserActions) {$pol.Conditions.ApplicationIncludeUserActions -join ","} else {"Not Configured"}
-        "LocationIncludeLocations"  = if ($pol.Conditions.LocationIncludeLocations) {($pol.Conditions.LocationIncludeLocations | ForEach-Object {Report-NamedLocations -ID $_}) -join ","} else {"Not Configured"}
-        "LocationExcludeLocations"  = if ($pol.Conditions.LocationExcludeLocations) {($pol.Conditions.LocationExcludeLocations | ForEach-Object {Report-NamedLocations -ID $_}) -join ","} else {"Not Configured"}
-        "GrantControlBuiltInControls" = if ($pol.GrantControlBuiltInControls) {$pol.GrantControlBuiltInControls -join ","} else {"Not Configured"}
-        "GrantControlTermsOfUse"  = if ($pol.GrantControlTermsOfUse) {$pol.GrantControlTermsOfUse -join "," } else {"Not Configured"}
-        "GrantControlOperator"  = if ($pol.GrantControlOperator) {$pol.GrantControlOperator} else {"Not Configured"}
-        "GrantControlCustomAuthenticationFactors" = if ($pol.GrantControlCustomAuthenticationFactors) {$pol.GrantControlCustomAuthenticationFactors -join "," } else {"Not Configured"}
-        "CloudAppSecurityCloudAppSecurityType" = if ($pol.CloudAppSecurityCloudAppSecurityType) {$pol.CloudAppSecurityCloudAppSecurityType} else {"Not Configured"}
-        "CloudAppSecurityIsEnabled" = if ($pol.CloudAppSecurityIsEnabled) {$pol.CloudAppSecurityIsEnabled} else {"Not Configured"}
-        "PersistentBrowserIsEnabled"  = if ($pol.PersistentBrowserIsEnabled) {$pol.PersistentBrowserIsEnabled} else {"Not Configured"}
-        "PersistentBrowserMode" = if ($pol.PersistentBrowserMode) {$pol.PersistentBrowserMode} else {"Not Configured"}
-        "SignInFrequencyIsEnabled"  = if ($pol.SignInFrequencyIsEnabled) {$pol.SignInFrequencyIsEnabled} else {"Not Configured"}
-        "SignInFrequencyType" = if ($pol.SignInFrequencyType) {$pol.SignInFrequencyType} else {"Not Configured"}
-        "SignInFrequencyValue"  = if ($pol.SignInFrequencyValue) {$pol.SignInFrequencyValue} else {"Not Configured"}
+        "PlatformIncludePlatforms"  = if ($pol.Conditions.Platforms.IncludePlatforms) {$pol.Conditions.Platforms.IncludePlatforms -join ","} else {"Not Configured"}
+        "PlatformExcludePlatforms"  = if ($pol.Conditions.Platforms.ExcludePlatforms) {$pol.Conditions.Platforms.ExcludePlatforms -join ","} else {"Not Configured"}
+        "DeviceStateIncludeStates"  = if ($pol.Conditions.DeviceStateIncludeStates) {$pol.Conditions.DeviceStateIncludeStates -join ","} else {"Failed to Report"}
+        "DeviceStateExcludeStates"  = if ($pol.Conditions.DeviceStateExcludeStates) {$pol.Conditions.DeviceStateExcludeStates -join ","} else {"Failed to Report"}
+        "ApplicationIncludeApplications" = if ($pol.Conditions.Applications.IncludeApplications) {($pol.Conditions.Applications.IncludeApplications | ForEach-Object {Report-DirectoryApps -AppID $_}) -join ","} else {"Not Configured"}
+        "ApplicationExcludeApplications" = if ($pol.Conditions.Applications.ExcludeApplications) {($pol.Conditions.Applications.ExcludeApplications | ForEach-Object {Report-DirectoryApps -AppID $_}) -join ","} else {"Not Configured"}
+        "ApplicationIncludeUserActions" = if ($pol.Conditions.Applications.IncludeUserActions) {$pol.Conditions.Applications.IncludeUserActions -join ","} else {"Not Configured"}
+        "LocationIncludeLocations"  = if ($pol.Conditions.Locations.IncludeLocations) {($pol.Conditions.Locations.IncludeLocations | ForEach-Object {Report-NamedLocations -ID $_}) -join ","} else {"Not Configured"}
+        "LocationExcludeLocations"  = if ($pol.Conditions.Locations.ExcludeLocations) {($pol.Conditions.Locations.ExcludeLocations | ForEach-Object {Report-NamedLocations -ID $_}) -join ","} else {"Not Configured"}
+        "GrantControlBuiltInControls" = if ($pol.GrantControls.BuiltInControls) {$pol.GrantControls.BuiltInControls -join ","} else {"Not Configured"}
+        "GrantControlTermsOfUse"  = if ($pol.GrantControls.TermsOfUse) {$pol.GrantControls.TermsOfUse -join "," } else {"Not Configured"}
+        "GrantControlOperator"  = if ($pol.GrantControls.Operator) {$pol.GrantControls.Operator} else {"Not Configured"}
+        "GrantControlCustomAuthenticationFactors" = if ($pol.GrantControls.CustomAuthenticationFactors) {$pol.GrantControls.CustomAuthenticationFactors -join "," } else {"Not Configured"}
+        "CloudAppSecurityCloudAppSecurityType" = if ($pol.SessionControls.CloudAppSecurity.CloudAppSecurityType) {$pol.SessionControls.CloudAppSecurity.CloudAppSecurityType} else {"Not Configured"}
+        "ApplicationEnforcedRestrictions" = if ($pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled) {$pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled} else {"Not Configured"}
+        "CloudAppSecurityIsEnabled" = if ($pol.SessionControls.CloudAppSecurity.IsEnabled) {$pol.SessionControls.CloudAppSecurity.IsEnabled} else {"Not Configured"}
+        "PersistentBrowserIsEnabled"  = if ($pol.SessionControls.PersistentBrowser.IsEnabled) {$pol.SessionControls.PersistentBrowser.IsEnabled} else {"Not Configured"}
+        "PersistentBrowserMode" = if ($pol.SessionControls.PersistentBrowser.Mode) {$pol.SessionControls.PersistentBrowser.Mode} else {"Not Configured"}
+        "SignInFrequencyIsEnabled"  = if ($pol.SessionControls.SignInFrequency.IsEnabled) {$pol.SessionControls.SignInFrequency.IsEnabled} else {"Not Configured"}
+        "SignInFrequencyType" = if ($pol.SessionControls.SignInFrequency.Type) {$pol.SessionControls.SignInFrequency.Type} else {"Not Configured"}
+        "SignInFrequencyValue"  = if ($pol.SessionControls.SignInFrequency.Value) {$pol.SessionControls.SignInFrequency.Value} else {"Not Configured"}
         }
     }
 }
@@ -235,7 +243,7 @@ process {
 end {
 
     Write-host "Creating the Reports." -ForegroundColor Green
-    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,UserIncludeRoles,UserExcludeRoles,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DeviceStateIncludeStates,DeviceStateExcludeStates,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
+    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,UserIncludeRoles,UserExcludeRoles,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DeviceStateIncludeStates,DeviceStateExcludeStates,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
     Write-Host "" 
     switch ($Export) {
         "All" { 
@@ -257,5 +265,5 @@ end {
     Write-Host ""
     write-host "Disconnecting from Microsoft Graph" -ForegroundColor Green
 
-    Disconnect-Graph
+    Disconnect-MGGraph
 }
