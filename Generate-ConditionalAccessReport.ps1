@@ -47,8 +47,8 @@
 .NOTES
     The script will connect to the Microsoft Graph service and collect the required information. 
     To install the latest modules:
-
     Install-Module Microsoft.Graph -AllowClobber -Force
+    Install-Module -Name Microsoft.Graph.Identity.RoleManagement
 .LINK
     Github 
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
