@@ -2,7 +2,7 @@
     PowerShell Script used to create a report for Azure AD Conditional Access Policies.
 
 # Note
-    Be aware that the modules used in the script are making use of APIs that are in preview status and are subject to change, and may break existing scenarios without notice. Don't take a production dependency on APIs in the beta endpoint.
+    The modules used in the script may still be in development and may change during the development cycle.
 
 # TO DO:
     The script is being reviewed and may be rewritten to make use of the Graph API's directly.
