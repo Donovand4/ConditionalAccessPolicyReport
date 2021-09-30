@@ -62,11 +62,11 @@ param (
     $Export
   )
 #Requires -Version 5.1
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups ,Microsoft.Graph.Identity.RoleManagement
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups
 Begin {    
     Clear-Host
     write-host "Importing the modules..."
-    Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups ,Microsoft.Graph.Identity.RoleManagement
+    Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups
 
     write-host "Logging into Microsoft Graph" -ForegroundColor Green
 
@@ -210,8 +210,6 @@ foreach ($pol in (Get-MgIdentityConditionalAccessPolicy)) {
         "UserExcludeUsers"  = if ($pol.Conditions.Users.ExcludeUsers) {($pol.Conditions.Users.ExcludeUsers | ForEach-Object{(Report-Users -ID $_ )}) -join ","} else {"Not Configured"} 
         "UserIncludeGroups" = if ($pol.Conditions.Users.IncludeGroups) {($pol.Conditions.Users.IncludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
         "UserExcludeGroups" = if ($pol.Conditions.Users.ExcludeGroups) {($pol.Conditions.Users.ExcludeGroups | ForEach-Object{(Report-Groups -ID $_ )}) -join ","} else {"Not Configured"}
-        "UserIncludeRoles"  = if ($pol.Conditions.Users.IncludeRoles) {($pol.Conditions.Users.IncludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
-        "UserExcludeRoles" = if ($pol.Conditions.Users.ExcludeRoles) {($pol.Conditions.Users.ExcludeRoles | ForEach-Object{(Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_).displayName}) -join "," } else {"Not Configured"}
         "ConditionSignInRiskLevels" = if ($pol.Conditions.SignInRiskLevels) {$pol.Conditions.SignInRiskLevels -join ","} else {"Not Configured"}
         "ConditionClientAppTypes" = if ($pol.Conditions.ClientAppTypes) {$pol.Conditions.ClientAppTypes -join ","} else {"Not Configured"}
         "PlatformIncludePlatforms"  = if ($pol.Conditions.Platforms.IncludePlatforms) {$pol.Conditions.Platforms.IncludePlatforms -join ","} else {"Not Configured"}
@@ -242,7 +240,7 @@ foreach ($pol in (Get-MgIdentityConditionalAccessPolicy)) {
 end {
 
     Write-host "Creating the Reports." -ForegroundColor Green
-    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,UserIncludeRoles,UserExcludeRoles,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DeviceStateIncludeStates,DeviceStateExcludeStates,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
+    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DeviceStateIncludeStates,DeviceStateExcludeStates,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
     Write-Host "" 
     switch ($Export) {
         "All" { 
