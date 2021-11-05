@@ -5,7 +5,7 @@
     The modules used in the script may still be in development and may change during the development cycle.
 
 # TO DO:
-    The script is being reviewed and may be rewritten to make use of the Graph API's directly.
+    Review improvements for report format and possibly doc export.
 
 # Description
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant. 
