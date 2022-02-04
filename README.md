@@ -16,7 +16,6 @@
     1.  Download and install the Microsoft Graph PowerShell module by launching a PowerShell Console as Administrator 
         and execute the below command:        
             Install-Module Microsoft.Graph -AllowClobber -Force
-            Install-Module -Name Microsoft.Graph.Identity.RoleManagement
             
     2.  Launch a PowerShell Console
     3.  Run the below to authenticate to the Microsoft Graph PowerShell (Preview) Application that is added to Azure AD.
@@ -27,13 +26,13 @@
     6.  The report can be executed as soon as the permissions are granted on the application.
     
 # Example
-    Generates a report in the CSV and HTML format
+    Generates a report in the CSV and HTML format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -export All
 
-    Generates a report in the CSV format
+    Generates a report in the CSV format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -export CSV
 
-    Generates a report in the HTML format
+    Generates a report in the HTML format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -export HTML
 # Outputs
     Exports .html and .csv files that contains the Conditional Access policies.
