@@ -29,6 +29,7 @@
     PowerShell Script used to generate Conditional Access Policies.
     Created by: Donovan du Val
     Date: 13 May 2020
+    Updated: 4 Feb 2022
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
@@ -53,7 +54,6 @@
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
     Microsoft Graph PowerShell Module
     https://www.powershellgallery.com/packages/Microsoft.Graph
-
 #>
 [CmdletBinding()]
 param (
@@ -61,7 +61,7 @@ param (
     [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $Export
 )
 #Requires -Version 5.1
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups
+#Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.9.2" }
 Begin {    
     Clear-Host
     Write-Host 'Importing the modules...'
@@ -158,8 +158,7 @@ Begin {
                 }
             }
         }
-    }
-    
+    }   
     
 
     $Head = @'
@@ -191,8 +190,6 @@ header {
     tr:nth-child(even) {background-color: #d6d6d6;}
 </style>  
 '@
-
-
 }
 
 process {
@@ -203,8 +200,6 @@ process {
     Write-Host 'Collecting Service Principals...' -ForegroundColor Green
     $servicePrincipals = Get-MgServicePrincipal | Select-Object AppDisplayName, AppId
     Write-Host ''
-    $Report = @()
-    #Collects the conditional access policies using the mgconditionalaccesspolicy command.
     $Report = @()
     #Collects the conditional access policies using the mgconditionalaccesspolicy command.
     foreach ($pol in (Get-MgIdentityConditionalAccessPolicy)) {
@@ -223,8 +218,8 @@ process {
             'ConditionClientAppTypes'                 = if ($pol.Conditions.ClientAppTypes) { $pol.Conditions.ClientAppTypes -join ',' } else { 'Not Configured' }
             'PlatformIncludePlatforms'                = if ($pol.Conditions.Platforms.IncludePlatforms) { $pol.Conditions.Platforms.IncludePlatforms -join ',' } else { 'Not Configured' }
             'PlatformExcludePlatforms'                = if ($pol.Conditions.Platforms.ExcludePlatforms) { $pol.Conditions.Platforms.ExcludePlatforms -join ',' } else { 'Not Configured' }
-            'DeviceStateIncludeStates'                = if ($pol.Conditions.DeviceStateIncludeStates) { $pol.Conditions.DeviceStateIncludeStates -join ',' } else { 'Failed to Report' }
-            'DeviceStateExcludeStates'                = if ($pol.Conditions.DeviceStateExcludeStates) { $pol.Conditions.DeviceStateExcludeStates -join ',' } else { 'Failed to Report' }
+            'DevicesFilterStatesMode'                 = if ($pol.Conditions.Devices.DeviceFilter.Mode) {$pol.Conditions.Devices.DeviceFilter.Mode -join ","} else {"Failed to Report"} 
+            'DevicesFilterStatesRule'                 = if ($pol.Conditions.Devices.DeviceFilter.Rule) {$pol.Conditions.Devices.DeviceFilter.Rule -join ","} else {"Failed to Report"}                       
             'ApplicationIncludeApplications'          = if ($pol.Conditions.Applications.IncludeApplications) { ($pol.Conditions.Applications.IncludeApplications | ForEach-Object { Report-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
             'ApplicationExcludeApplications'          = if ($pol.Conditions.Applications.ExcludeApplications) { ($pol.Conditions.Applications.ExcludeApplications | ForEach-Object { Report-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
             'ApplicationIncludeUserActions'           = if ($pol.Conditions.Applications.IncludeUserActions) { $pol.Conditions.Applications.IncludeUserActions -join ',' } else { 'Not Configured' }
@@ -249,22 +244,23 @@ process {
 end {
 
     Write-Host 'Creating the Reports.' -ForegroundColor Green
-    $ReportData = $Report | Select-Object -Property Displayname, Description, State, ID, createdDateTime, ModifiedDateTime, UserIncludeUsers, UserExcludeUsers, UserIncludeGroups, UserExcludeGroups, ConditionSignInRiskLevels, ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DeviceStateIncludeStates, DeviceStateExcludeStates, ApplicationIncludeApplications, ApplicationExcludeApplications, ApplicationIncludeUserActions, LocationIncludeLocations, LocationExcludeLocations, GrantControlBuiltInControls, GrantControlTermsOfUse, GrantControlOperator, GrantControlCustomAuthenticationFactors, ApplicationEnforcedRestrictions, CloudAppSecurityCloudAppSecurityType, CloudAppSecurityIsEnabled, PersistentBrowserIsEnabled, PersistentBrowserMode, SignInFrequencyIsEnabled, SignInFrequencyType, SignInFrequencyValue | Sort-Object -Property Displayname
+    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DevicesFilterStatesMode,DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname    
     Write-Host '' 
     switch ($Export) {
         'All' { 
             Write-Host 'Generating the HTML Report.' -ForegroundColor Green
             $ReportData | ConvertTo-Html -Head $Head -Body "<font color=`"Black`"><h1><center>Conditional Access Policies Report - $Date</center></h1></font>" | Out-File "$Filename.html"
             
-            Write-Host 'Generating the CSV Report.' -ForegroundColor Green
+            Write-Host "Generating the HTML Report. $Filename.html" -ForegroundColor Green
+            Write-Host "Generating the CSV Report. $Filename.csv" -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation 
         }
         'CSV' {
-            Write-Host 'Generating the CSV Report.' -ForegroundColor Green
+            Write-Host "Generating the CSV Report. $Filename.csv"  -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation
         }
         'HTML' {
-            Write-Host 'Generating the HTML Report.' -ForegroundColor Green
+            Write-Host "Generating the HTML Report. $Filename.html" -f $Filename -ForegroundColor Green
             $ReportData | ConvertTo-Html -Head $Head -Body "<font color=`"Black`"><h1><center>Conditional Access Policies Report - $Date</center></h1></font>" | Out-File "$Filename.html"
         }
     }
