@@ -100,7 +100,7 @@ Begin {
             [String[]]
             $AppID
         )
-        ($servicePrincipals | Where-Object { $_.AppID -eq $AppID }).AppDisplayName
+        ($servicePrincipals | Where-Object { $_.AppID -eq $AppID }).DisplayName
     }
     
     function Report-NamedLocations {
@@ -198,7 +198,7 @@ process {
     $namedLocations = Get-MgIdentityConditionalAccessNamedLocation | Select-Object displayname, id
 
     Write-Host 'Collecting Service Principals...' -ForegroundColor Green
-    $servicePrincipals = Get-MgServicePrincipal | Select-Object AppDisplayName, AppId
+    $servicePrincipals = Get-MgServicePrincipal -All | Select-Object DisplayName, AppId
     Write-Host ''
     $Report = @()
     #Collects the conditional access policies using the mgconditionalaccesspolicy command.
