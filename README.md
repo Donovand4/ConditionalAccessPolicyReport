@@ -38,5 +38,6 @@
     Exports .html and .csv files that contains the Conditional Access policies.
 # Notes
     The script will connect to the Microsoft Graph service and collect the required information. 
+    If there are any missing policies, then rerun the script using the Beta profile parameter and compare the output.
 # Link
     Github - https://github.com/microsoftgraph/msgraph-sdk-powershell
