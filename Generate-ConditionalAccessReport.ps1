@@ -49,6 +49,8 @@
     The script will connect to the Microsoft Graph service and collect the required information. 
     To install the latest modules:
     Install-Module Microsoft.Graph -AllowClobber -Force
+
+    If there is any missing policies, then rerun the script using the Beta profile parameter and compare the output.
 .LINK
     Github 
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
@@ -58,6 +60,7 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $False)] [String] $TenantID,
+    [Parameter(Mandatory = $False)] [String] [ValidateSet($true)] $BetaProfile,
     [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $Export
 )
 #Requires -Version 5.1
@@ -88,6 +91,13 @@ Begin {
             Start-Sleep -Seconds 2
             Exit
         }
+    }
+
+    if ($BetaProfile -eq $true)
+    {
+        Write-Host 'Selecting the Beta profile' -ForegroundColor Green
+
+        Select-MgProfile -Name Beta
     }
     
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green
