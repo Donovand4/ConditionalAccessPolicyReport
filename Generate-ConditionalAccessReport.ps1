@@ -50,7 +50,7 @@
     To install the latest modules:
     Install-Module Microsoft.Graph -AllowClobber -Force
 
-    If there is any missing policies, then rerun the script using the Beta profile parameter and compare the output.
+    If there are any missing policies, then rerun the script using the Beta profile parameter and compare the output.
 .LINK
     Github 
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
