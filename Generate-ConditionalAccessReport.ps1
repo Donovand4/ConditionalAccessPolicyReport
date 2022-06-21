@@ -40,7 +40,10 @@
     PS C:\> Generate-ConditionalAccessReport.ps1 -export CSV
 .EXAMPLE
     Generates a report in the HTML format
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export HTML
+    PS C:\> Generate-ConditionalAccessReport.ps1 -export HTML    
+.EXAMPLE
+    Generates a report in the CSV format using the Graph Beta profile
+    PS C:\> Generate-ConditionalAccessReport.ps1 -export CSV -BetaProfile $true
 .INPUTS
    No inputs
 .OUTPUTS
