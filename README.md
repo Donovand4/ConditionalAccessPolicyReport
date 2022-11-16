@@ -39,5 +39,10 @@
 # Notes
     The script will connect to the Microsoft Graph service and collect the required information. 
     If there are any missing policies, then rerun the script using the Beta profile parameter and compare the output.
+    
+    If PowerShell logs an error message for MaximumFunctionCount or MaximumVariableCount. This can be increased using the below.    
+    $MaximumFunctionCount = 8192 
+    $MaximumVariableCount = 8192
+    
 # Link
     Github - https://github.com/microsoftgraph/msgraph-sdk-powershell
