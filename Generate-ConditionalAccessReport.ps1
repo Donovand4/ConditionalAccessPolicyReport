@@ -29,7 +29,7 @@
     PowerShell Script used to generate Conditional Access Policies.
     Created by: Donovan du Val
     Date: 13 May 2020
-    Updated: 4 Feb 2022
+    Updated: 16 Nov 2022
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
@@ -54,6 +54,12 @@
     Install-Module Microsoft.Graph -AllowClobber -Force
 
     If there are any missing policies, then rerun the script using the Beta profile parameter and compare the output.
+
+    If PowerShell logs an error message for MaximumFunctionCount or MaximumVariableCount. This can be increased using the below.
+    
+    $MaximumFunctionCount = 8192 
+    $MaximumVariableCount = 8192
+
 .LINK
     Github 
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
@@ -67,8 +73,8 @@ param (
     [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $Export
 )
 #Requires -Version 5.1
-#Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.9.2" }
-Begin {    
+#Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.16.0" }
+Begin {
     Clear-Host
     Write-Host 'Importing the modules...'
     Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups
