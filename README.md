@@ -19,7 +19,7 @@
             
     2.  Launch a PowerShell Console
     3.  Run the below to authenticate to the Microsoft Graph PowerShell (Preview) Application that is added to Azure AD.
-            Connect-Graph -Scopes "Policy.Read.All","Directory.Read.All"
+            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All'
             
     4.  Complete the authentication by following the device login prompts.
     5.  Review and accept the required permissions.
