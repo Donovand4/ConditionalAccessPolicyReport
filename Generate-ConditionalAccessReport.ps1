@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.1         Date Last Modified: 21 June 2022                    #  
+#   Version 1.1         Date Last Modified: 20 February 2023                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies.
     Created by: Donovan du Val
-    Date: 13 May 2020
-    Updated: 16 Nov 2022
+    Creation Date: 13 May 2020
+    Last Updated: 20 Feb 2023 - Added filtering to HTML report.
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
@@ -68,9 +68,9 @@
 #>
 [CmdletBinding()]
 param (
+[Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $OutputFormat,
     [Parameter(Mandatory = $False)] [String] $TenantID,
-    [Parameter(Mandatory = $False)] [String] [ValidateSet($true)] $BetaProfile,
-    [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $Export
+    [Parameter(Mandatory = $False)] [String] [ValidateSet($true)] $BetaProfile
 )
 #Requires -Version 5.1
 #Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.16.0" }
@@ -178,8 +178,6 @@ Begin {
             }
         }
     }   
-    
-
     $Head = @'
 <style>
 header {
@@ -207,8 +205,94 @@ header {
     color: #000000;    
     }
     tr:nth-child(even) {background-color: #d6d6d6;}
-</style>  
+    #myDisplayNameFilterID {
+    width: 75%;
+    font-size: 18px;
+    padding: 10px 20px 10px 20px;
+    border: 1.5px solid #ddd; 
+    margin-bottom: 15px;
+</style>
 '@
+
+##Body format with filter scripts
+$HTMLBody = @"
+<font color="Black"><h1><center>Conditional Access Policies Report - $($date)</center></h1></font>
+<font color="Black"><h2>Quick Filter:</h2></font>
+<div id="myCAQuickFilterContainer">
+  <button class="btn active" onclick="myStateFilter('all')"> Clear filters</button>
+  <button class="btn" onclick="myStateFilter('Enabled')"> Enabled</button>
+  <button class="btn" onclick="myStateFilter('Disabled')"> Disabled</button>
+</div>
+<font color="Black"><h2>Display Name Filter:</h2></font>
+<input type="text" id="myDisplayNameFilterID" onkeyup="myDisplayNameFilter()" placeholder="Search for Display Names..">
+<br>
+<script>
+  function myStateFilter(a)
+  {
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue;
+    filter = a.toUpperCase();
+    table = document.getElementById("myCATable");
+    tr = table.getElementsByTagName("tr");
+    if (a == "all")
+    {
+        for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[2];
+        if (td)
+        {
+          tr[i].style.display = "";
+        }
+      }
+    }
+    else{
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[2];
+        if (td)
+        {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1)
+          {
+            tr[i].style.display = "";
+          } else
+          {
+            tr[i].style.display = "none";
+          }
+        }
+      }
+    }
+  }
+
+function myDisplayNameFilter()
+{
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myDisplayNameFilterID");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("myCATable");
+  tr = table.getElementsByTagName("tr");
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++)
+  {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td)
+    {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1)
+      {
+        tr[i].style.display = "";
+      } else
+      {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+</script>
+
+"@
 }
 
 process {
@@ -262,25 +346,26 @@ process {
   
 end {
 
-    Write-Host 'Creating the Reports.' -ForegroundColor Green
+    Write-Host 'Generating the Reports.' -ForegroundColor Green
     $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DevicesFilterStatesMode,DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname    
     Write-Host '' 
-    switch ($Export) {
+    switch ($OutputFormat) {
         'All' { 
-            Write-Host 'Generating the HTML Report.' -ForegroundColor Green
-            $ReportData | ConvertTo-Html -Head $Head -Body "<font color=`"Black`"><h1><center>Conditional Access Policies Report - $Date</center></h1></font>" | Out-File "$Filename.html"
+            Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
+            $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
+            ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
             
-            Write-Host "Generating the HTML Report. $Filename.html" -ForegroundColor Green
-            Write-Host "Generating the CSV Report. $Filename.csv" -ForegroundColor Green
+            Write-Host "Generating the CSV Report. $($Filename.csv)" -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation 
         }
         'CSV' {
-            Write-Host "Generating the CSV Report. $Filename.csv"  -ForegroundColor Green
+            Write-Host "Generating the CSV Report. $($Filename.csv)" -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation
         }
         'HTML' {
-            Write-Host "Generating the HTML Report. $Filename.html" -f $Filename -ForegroundColor Green
-            $ReportData | ConvertTo-Html -Head $Head -Body "<font color=`"Black`"><h1><center>Conditional Access Policies Report - $Date</center></h1></font>" | Out-File "$Filename.html"
+            Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
+            $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
+            ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
         }
     }
     Write-Host ''
