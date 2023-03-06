@@ -27,13 +27,13 @@
     
 # Example
     Generates a report in the CSV and HTML format in the same location where the script is located.
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export All
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All
 
     Generates a report in the CSV format in the same location where the script is located.
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export CSV
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat CSV
 
     Generates a report in the HTML format in the same location where the script is located.
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export HTML
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat HTML
 # Outputs
     Exports .html and .csv files that contains the Conditional Access policies.
 # Notes
