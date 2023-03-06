@@ -34,16 +34,16 @@
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
     Generates a report in the CSV and HTML format
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export All
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All
 .EXAMPLE
     Generates a report in the CSV format
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export CSV
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat CSV
 .EXAMPLE
     Generates a report in the HTML format
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export HTML    
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat HTML    
 .EXAMPLE
     Generates a report in the CSV format using the Graph Beta profile
-    PS C:\> Generate-ConditionalAccessReport.ps1 -export CSV -BetaProfile $true
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat CSV -BetaProfile $true
 .INPUTS
    No inputs
 .OUTPUTS
