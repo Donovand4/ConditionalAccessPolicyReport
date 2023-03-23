@@ -69,8 +69,7 @@
 [CmdletBinding()]
 param (
 [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $OutputFormat,
-    [Parameter(Mandatory = $False)] [String] $TenantID,
-    [Parameter(Mandatory = $False)] [String] [ValidateSet($true)] $BetaProfile
+    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
 )
 #Requires -Version 5.1
 #Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.16.0" }
@@ -100,13 +99,6 @@ Begin {
             Start-Sleep -Seconds 2
             Exit
         }
-    }
-
-    if ($BetaProfile -eq $true)
-    {
-        Write-Host 'Selecting the Beta profile' -ForegroundColor Green
-
-        Select-MgProfile -Name Beta
     }
     
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green

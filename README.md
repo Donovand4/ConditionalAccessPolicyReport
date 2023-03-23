@@ -27,7 +27,7 @@
     
 # Example
     Generates a report in the CSV and HTML format in the same location where the script is located.
-    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All -TenantID <TenantID>
 
     Generates a report in the CSV format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat CSV
@@ -37,9 +37,7 @@
 # Outputs
     Exports .html and .csv files that contains the Conditional Access policies.
 # Notes
-    The script will connect to the Microsoft Graph service and collect the required information. 
-    If there are any missing policies, then rerun the script using the Beta profile parameter and compare the output.
-    
+    The script will connect to the Microsoft Graph service and collect the required information.     
     If PowerShell logs an error message for MaximumFunctionCount or MaximumVariableCount. This can be increased using the below.    
     $MaximumFunctionCount = 8192 
     $MaximumVariableCount = 8192
