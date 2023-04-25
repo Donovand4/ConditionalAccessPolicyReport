@@ -29,7 +29,7 @@
     PowerShell Script used to generate Conditional Access Policies.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Last Updated: 20 Feb 2023 - Added filtering to HTML report.
+    Last Updated: 25 April 2023 - Added improved filtering to HTML report, updated module versions.
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
@@ -69,7 +69,7 @@ param (
     [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
 )
 #Requires -Version 5.1
-#Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.16.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.26.0" }
 Begin {
     Clear-Host
     Write-Host 'Importing the modules...'
@@ -200,22 +200,77 @@ header {
     padding: 10px 20px 10px 20px;
     border: 1.5px solid #ddd; 
     margin-bottom: 15px;
+    }
+.dropbtn {
+  background-color: #003366;
+  color: white;
+  padding: 16px;
+  font-size: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+.dropbtn:hover, .dropbtn:focus {
+  background-color: #b8d5e9;
+}
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  overflow: auto;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+.dropdown a:hover {background-color: #ddd;}
+.show {display: block;}
 </style>
 '@
 
 ##Body format with filter scripts
 $HTMLBody = @"
 <font color="Black"><h1><center>Conditional Access Policies Report - $($date)</center></h1></font>
-<font color="Black"><h2>Quick Filter:</h2></font>
-<div id="myCAQuickFilterContainer">
-  <button class="btn active" onclick="myStateFilter('all')"> Clear filters</button>
-  <button class="btn" onclick="myStateFilter('Enabled')"> Enabled</button>
-  <button class="btn" onclick="myStateFilter('Disabled')"> Disabled</button>
+<div class="dropdown">
+  <button onclick="myDropdownFunction()" class="dropbtn">Quick Filter</button>
+  <div id="myDropdown" class="dropdown-content">
+    <a href="#All Policies" onclick="myStateFilter('all')"> Clear filters</a>
+    <a href="#Enabled" onclick="myStateFilter('Enabled')">Enabled</a>
+    <a href="#Disabled" onclick="myStateFilter('Disabled')"> Disabled</a>
+    <a href="#Reporting" onclick="myStateFilter('EnabledForReportingButNotEnforced')"> Reporting</a>
+    <a href="#MFA Enforced" onclick="myMFAFilter('Mfa')"> MFA Enforced</a>
+  </div>
 </div>
-<font color="Black"><h2>Display Name Filter:</h2></font>
 <input type="text" id="myDisplayNameFilterID" onkeyup="myDisplayNameFilter()" placeholder="Search for Display Names..">
 <br>
 <script>
+function myDropdownFunction() {
+  document.getElementById("myDropdown").classList.toggle("show");
+}
+
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+
   function myStateFilter(a)
   {
     // Declare variables
@@ -253,6 +308,45 @@ $HTMLBody = @"
       }
     }
   }
+
+function myMFAFilter(a)
+{
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  filter = a.toUpperCase();
+  table = document.getElementById("myCATable");
+  tr = table.getElementsByTagName("tr");
+  if (a == "all")
+  {
+    for (i = 0; i < tr.length; i++)
+    {
+      td = tr[i].getElementsByTagName("td")[21];
+      if (td)
+      {
+        tr[i].style.display = "";
+      }
+    }
+  }
+  else
+  {
+    // Loop through all table rows, and hide those who don't match the search query
+    for (i = 0; i < tr.length; i++)
+    {
+      td = tr[i].getElementsByTagName("td")[21];
+      if (td)
+      {
+        txtValue = td.textContent || td.innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1)
+        {
+          tr[i].style.display = "";
+        } else
+        {
+          tr[i].style.display = "none";
+        }
+      }
+    }
+  }
+}
 
 function myDisplayNameFilter()
 {
