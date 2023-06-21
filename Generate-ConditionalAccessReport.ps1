@@ -107,6 +107,17 @@ Begin {
             Exit
         }
     }
+
+    if ($BetaProfile -eq 'false') 
+    {
+        Write-Host 'Connecting to Default Profile' -ForegroundColor Green
+        Select-MgProfile -Name v1.0
+    }
+    else 
+    {
+        Write-Host 'Connecting to Beta Profile' -ForegroundColor Green
+        Select-MgProfile -Name beta
+    }
     
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green
     $Date = Get-Date -Format dd-MMMM-yyyy
