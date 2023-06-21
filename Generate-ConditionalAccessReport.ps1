@@ -29,7 +29,6 @@
     PowerShell Script used to generate Conditional Access Policies.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Last Updated: 25 April 2023 - Added improved filtering to HTML report, updated module versions.
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
 .EXAMPLE
@@ -57,6 +56,13 @@
     $MaximumFunctionCount = 8192 
     $MaximumVariableCount = 8192
 
+    Updates:
+    25 Apr 2023: Added improved filtering to HTML report, updated module versions.
+    21 Jun 2023: Updated module version, 
+                  improved module imports to reduce run time, 
+                  added All parameter for collecting policies,
+                  default to beta profile for collecting policies. 
+
 .LINK
     Github 
     https://github.com/microsoftgraph/msgraph-sdk-powershell 
@@ -66,14 +72,18 @@
 [CmdletBinding()]
 param (
 [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $OutputFormat,
-    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
+    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID,
+    [Parameter(Mandatory = $False, Position = 2)] [ValidateSet('True', 'False')] $BetaProfile = 'true'
 )
 #Requires -Version 5.1
-#Requires -Modules @{ ModuleName="Microsoft.Graph"; ModuleVersion="1.26.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Authentication"; ModuleVersion="1.28.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Identity.SignIns"; ModuleVersion="1.28.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Applications"; ModuleVersion="1.28.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Users"; ModuleVersion="1.28.0" }
+#Requires -Modules @{ ModuleName="Microsoft.Graph.Groups"; ModuleVersion="1.28.0" }
 Begin {
     Clear-Host
     Write-Host 'Importing the modules...'
-    Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Applications, Microsoft.Graph.Users, Microsoft.Graph.Groups
 
     Write-Host 'Logging into Microsoft Graph' -ForegroundColor Green
     if ($TenantID.Length -eq 0) {
@@ -388,7 +398,7 @@ process {
     Write-Host ''
     $Report = @()
     #Collects the conditional access policies using the mgconditionalaccesspolicy command.
-    foreach ($pol in (Get-MgIdentityConditionalAccessPolicy)) {
+    foreach ($pol in (Get-MgIdentityConditionalAccessPolicy -All)) {
         $Report += New-Object PSobject -Property @{
             'Displayname'                             = $pol.displayName
             'Description'                             = $pol.Description
