@@ -72,8 +72,8 @@
 [CmdletBinding()]
 param (
 [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $OutputFormat,
-    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID,
-    [Parameter(Mandatory = $False, Position = 2)] [ValidateSet('True', 'False')] $BetaProfile = 'true'
+    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
+    #,[Parameter(Mandatory = $False, Position = 2)] [ValidateSet('True', 'False')] $BetaProfile = 'true'
 )
 #Requires -Version 5.1
 #Requires -Modules @{ ModuleName="Microsoft.Graph.Authentication"; ModuleVersion="1.28.0" }
@@ -108,16 +108,16 @@ Begin {
         }
     }
 
-    if ($BetaProfile -eq 'false') 
-    {
-        Write-Host 'Connecting to Default Profile' -ForegroundColor Green
-        Select-MgProfile -Name v1.0
-    }
-    else 
-    {
-        Write-Host 'Connecting to Beta Profile' -ForegroundColor Green
-        Select-MgProfile -Name beta
-    }
+    #if ($BetaProfile -eq 'false') 
+    #{
+    #    Write-Host 'Connecting to Default Profile' -ForegroundColor Green
+    #    Select-MgProfile -Name v1.0
+    #}
+    #else 
+    #{
+    #    Write-Host 'Connecting to Beta Profile' -ForegroundColor Green
+    #    Select-MgProfile -Name beta
+    #}
     
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green
     $Date = Get-Date -Format dd-MMMM-yyyy
