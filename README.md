@@ -1,14 +1,14 @@
 # ConditionalAccessPolicyReport
-    PowerShell Script used to create a report for Azure AD Conditional Access Policies.
+    PowerShell Script used to create a report for Entra ID Conditional Access Policies.
 
 # Note
     The modules used in the script may still be in development and may change during the development cycle.
 
 # TO DO:
-    Review improvements for report format and possibly doc export.
+    Open to suggestions.
 
 # Description
-    The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant. 
+    The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
     The report will resolve all ID's used within the policies for users, groups, named locations and applications.
 # Getting Started
     Below is a list of steps recommended to allow the report to authenticate and retrieve the information required.
@@ -35,7 +35,7 @@
     Generates a report in the HTML format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat HTML
 # Outputs
-    Exports .html and .csv files that contains the Conditional Access policies.
+    Exports .html and .csv files that contains the Conditional Access policies and Named Locations
 # Notes
     The script will connect to the Microsoft Graph service and collect the required information.     
     If PowerShell logs an error message for MaximumFunctionCount or MaximumVariableCount. This can be increased using the below.    

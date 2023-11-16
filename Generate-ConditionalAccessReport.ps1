@@ -22,20 +22,20 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.1         Date Last Modified: 16 November 2023                #  
+#   Version 1.2         Date Last Modified: 16 November 2023                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
-    PowerShell Script used to generate Conditional Access Policies.
+    PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
 .DESCRIPTION
-    The script will generate a report for all the Conditional Access Policies used in the Azure AD Tenant.
+    The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
-    Generates a report in the CSV and HTML format
+    Generates reports in the CSV and HTML format
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All -TenantID <TenantID>
 .EXAMPLE
-    Generates a report in the CSV format
+    Generates reports in the CSV format
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat CSV
 .EXAMPLE
     Generates a report in the HTML format
@@ -43,7 +43,7 @@
 .INPUTS
    No inputs
 .OUTPUTS
-    Exports .html and .csv files that contains the Conditional Access policies.
+    Exports .html and .csv files that contains the Conditional Access policies and Named Locations
 .NOTES
     The script will connect to the Microsoft Graph service and collect the required information. 
     To install the latest modules:
@@ -62,6 +62,8 @@
                   improved module imports to reduce run time, 
                   added All parameter for collecting policies,
                   default to beta profile for collecting policies. 
+    16 Nov 2023: Updated module version, 
+                  added named locations report
 
 .LINK
     Github 
@@ -73,7 +75,6 @@
 param (
 [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $OutputFormat,
     [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
-    #,[Parameter(Mandatory = $False, Position = 2)] [ValidateSet('True', 'False')] $BetaProfile = 'true'
 )
 #Requires -Version 5.1
 #Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.9.0" }
@@ -89,7 +90,7 @@ Begin {
     if ($TenantID.Length -eq 0) {
         try {
             Write-Host "Trying to connect without tenant ID"
-            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All'
+            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -NoWelcome
         }
         catch {
             Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
@@ -99,7 +100,7 @@ Begin {
     } else {
         try {
             Write-Host "Trying to connect to tenant: $TenantID"
-            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -TenantId $TenantID
+            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -TenantId $TenantID -NoWelcome
         }
         catch {
             Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
@@ -111,6 +112,7 @@ Begin {
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green
     $Date = Get-Date -Format dd-MMMM-yyyy
     $Filename = "ConditionalAccessReport - $($Date)"
+    $NamedLocationsFileName = "NamedLocations - $($Date)"
 
     function Report-DirectoryApps {
         param (
@@ -130,9 +132,24 @@ Begin {
         switch ($ID) {
             '00000000-0000-0000-0000-000000000000' { 'Unknown Site' }
             'All' { 'All' }
-	    'AllTrusted' {'AllTrusted'}
+	          'AllTrusted' {'AllTrusted'}
             Default {
             ($namedLocations | Where-Object { $_.ID -eq $ID }).displayName
+            }
+        }
+    }
+
+    function Get-TypeOfNamedLocations {
+        param (
+            [Parameter(Mandatory = $true)]
+            [String[]]
+            $TypeString
+        )
+        switch ($TypeString) {
+            '#microsoft.graph.ipNamedLocation' { 'ipNamedLocation' }
+            '#microsoft.graph.countryNamedLocation' { 'countryNamedLocation' }
+            Default {
+            "UnknownType"
             }
         }
     }
@@ -392,8 +409,14 @@ function myDisplayNameFilter()
 process {
     Write-Host ''
     Write-Host 'Collecting Named Locations...' -ForegroundColor Green
-    $namedLocations = Get-MgIdentityConditionalAccessNamedLocation | Select-Object displayname, id
-
+    $namedLocations = Get-MgIdentityConditionalAccessNamedLocation | select-object displayname,id,`
+    @{name="Type";expression={($_.AdditionalProperties.'@odata.type' | ForEach-Object {Get-TypeOfNamedLocations -TypeString $_ })}},`
+    @{name="isTrusted";expression={$_.additionalproperties.isTrusted}},`
+    @{name="ipRanges";expression={$_.additionalproperties.ipRanges.cidrAddress -join ","}},`
+    @{name="Country";express={$_.additionalproperties.countriesAndRegions -join ","}},`
+    @{name="includeUnknownCountriesAndRegions";expression={$_.additionalproperties.includeUnknownCountriesAndRegions}},`
+    @{name="countryLookupMethod";expression={$_.additionalproperties.countryLookupMethod}}
+    
     Write-Host 'Collecting Service Principals...' -ForegroundColor Green
     $servicePrincipals = Get-MgServicePrincipal -All | Select-Object DisplayName, AppId
     Write-Host ''
@@ -449,12 +472,13 @@ end {
             $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
             ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
             
-            Write-Host "Generating the CSV Report. $($Filename.csv)" -ForegroundColor Green
-            $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation 
+            Write-Host "Generating the CSV Reports. $($Filename.csv)" -ForegroundColor Green
+            $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation -Delimiter ";"
+            $namedLocations | Export-Csv "$NamedLocationsFileName.csv" -NoTypeInformation -Delimiter ";"
         }
         'CSV' {
-            Write-Host "Generating the CSV Report. $($Filename.csv)" -ForegroundColor Green
-            $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation
+            Write-Host "Generating the CSV Reports. $($Filename.csv)" -ForegroundColor Green
+            $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation -Delimiter ";"
         }
         'HTML' {
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
