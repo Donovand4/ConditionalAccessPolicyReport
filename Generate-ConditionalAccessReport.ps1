@@ -22,13 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.2         Date Last Modified: 16 November 2023                #  
+#   Version 1.3         Date Last Modified: 12 March 2024                   #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
+    Date Last Modified: 12 March 2024
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -64,6 +65,9 @@
                   default to beta profile for collecting policies. 
     16 Nov 2023: Updated module version, 
                   added named locations report
+    12 March 2024: Updated module version,
+                    Added directory roles,
+                    resolved some filtering issues for platforms.
 
 .LINK
     Github 
@@ -77,11 +81,12 @@ param (
     [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
 )
 #Requires -Version 5.1
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.9.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.SignIns"; ModuleVersion = "2.9.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Applications"; ModuleVersion = "2.9.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Users"; ModuleVersion = "2.9.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Groups"; ModuleVersion = "2.9.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.15.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.SignIns"; ModuleVersion = "2.15.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Applications"; ModuleVersion = "2.15.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Users"; ModuleVersion = "2.15.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Groups"; ModuleVersion = "2.15.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.DirectoryManagement"; ModuleVersion = "2.15.0" }
 Begin {
     Clear-Host
     Write-Host 'Importing the modules...'
@@ -120,7 +125,22 @@ Begin {
             [String[]]
             $AppID
         )
-        ($servicePrincipals | Where-Object { $_.AppID -eq $AppID }).DisplayName
+        switch ($AppID) 
+        {
+            'All' { 'All' }
+            'Office365' {'Office365'}
+            Default { 
+              $appName = ($servicePrincipals | Where-Object { $_.AppID -eq $AppID }).DisplayName 
+              if ($appName) 
+              {
+                $appName
+              } 
+              else 
+              {
+                "LookingUpError-$($AppID)"
+              }
+            }
+        }
     }
     
     function Report-NamedLocations {
@@ -173,6 +193,23 @@ Begin {
                 }
             }
         }
+    }
+
+    function Report-DirectoryRole {
+      param (
+              [Parameter(Mandatory = $true)]
+              [String[]]
+              $ID
+          )
+          $RoleTemplate = ($DirectoryRoleTemplates | Where-Object { $_.Id -eq "$($ID)" }).DisplayName
+          if ($RoleTemplate) 
+          {
+            $RoleTemplate
+          } 
+          else 
+          {
+            "LookingUpError-$($ID)"
+          }     
     }
     
     function Report-Groups {
@@ -410,16 +447,19 @@ process {
     Write-Host ''
     Write-Host 'Collecting Named Locations...' -ForegroundColor Green
     $namedLocations = Get-MgIdentityConditionalAccessNamedLocation | select-object displayname,id,`
-    @{name="Type";expression={($_.AdditionalProperties.'@odata.type' | ForEach-Object {Get-TypeOfNamedLocations -TypeString $_ })}},`
-    @{name="isTrusted";expression={$_.additionalproperties.isTrusted}},`
-    @{name="ipRanges";expression={$_.additionalproperties.ipRanges.cidrAddress -join ","}},`
-    @{name="Country";express={$_.additionalproperties.countriesAndRegions -join ","}},`
-    @{name="includeUnknownCountriesAndRegions";expression={$_.additionalproperties.includeUnknownCountriesAndRegions}},`
-    @{name="countryLookupMethod";expression={$_.additionalproperties.countryLookupMethod}}
+    @{ name ="Type"; expression ={($_.AdditionalProperties.'@odata.type' | ForEach-Object {Get-TypeOfNamedLocations -TypeString $_ })}},`
+    @{ name ="isTrusted"; expression ={$_.additionalproperties.isTrusted}},`
+    @{ name ="ipRanges"; expression ={$_.additionalproperties.ipRanges.cidrAddress -join ","}},`
+    @{ name ="Country";express={$_.additionalproperties.countriesAndRegions -join ","}},`
+    @{ name ="includeUnknownCountriesAndRegions"; expression ={$_.additionalproperties.includeUnknownCountriesAndRegions}},`
+    @{ name ="countryLookupMethod"; expression ={$_.additionalproperties.countryLookupMethod}}
     
     Write-Host 'Collecting Service Principals...' -ForegroundColor Green
     $servicePrincipals = Get-MgServicePrincipal -All | Select-Object DisplayName, AppId
     Write-Host ''
+    Write-Host "Collecting Directory Role Templates..." -ForegroundColor Green
+    $DirectoryRoleTemplates = Get-MgDirectoryRoleTemplate | select-object DisplayName,Id
+    write-host ""
     $Report = @()
     #Collects the conditional access policies using the mgconditionalaccesspolicy command.
     foreach ($pol in (Get-MgIdentityConditionalAccessPolicy -All)) {
@@ -430,16 +470,18 @@ process {
             'ID'                                      = $pol.id
             'createdDateTime'                         = if ($pol.createdDateTime) { $pol.createdDateTime } else { 'Null' }          
             'ModifiedDateTime'                        = if ($pol.ModifiedDateTime) { $pol.ModifiedDateTime } else { 'Null' }
-            'UserIncludeUsers'                        = if ($pol.Conditions.Users.IncludeUsers) { ($pol.Conditions.Users.IncludeUsers | ForEach-Object { (Report-Users -ID $_ ) }) -join ',' } else { 'Not Configured' } 
+            'UserIncludeUsers'                        = if ($pol.Conditions.Users.IncludeUsers) { ($pol.Conditions.Users.IncludeUsers | ForEach-Object { (Report-Users -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'DirectoryRolesInclude'                   = if ($pol.Conditions.Users.IncludeRoles) { ($pol.Conditions.Users.IncludeRoles | ForEach-Object { (Report-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'UserExcludeUsers'                        = if ($pol.Conditions.Users.ExcludeUsers) { ($pol.Conditions.Users.ExcludeUsers | ForEach-Object { (Report-Users -ID $_ ) }) -join ',' } else { 'Not Configured' } 
+            'DirectoryRolesExclude'                   = if ($pol.Conditions.Users.ExcludeRoles) { ($pol.Conditions.Users.ExcludeRoles | ForEach-Object { (Report-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'UserIncludeGroups'                       = if ($pol.Conditions.Users.IncludeGroups) { ($pol.Conditions.Users.IncludeGroups | ForEach-Object { (Report-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'UserExcludeGroups'                       = if ($pol.Conditions.Users.ExcludeGroups) { ($pol.Conditions.Users.ExcludeGroups | ForEach-Object { (Report-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'ConditionSignInRiskLevels'               = if ($pol.Conditions.SignInRiskLevels) { $pol.Conditions.SignInRiskLevels -join ',' } else { 'Not Configured' }
             'ConditionClientAppTypes'                 = if ($pol.Conditions.ClientAppTypes) { $pol.Conditions.ClientAppTypes -join ',' } else { 'Not Configured' }
-            'PlatformIncludePlatforms'                = if ($pol.Conditions.Platforms.IncludePlatforms) { $pol.Conditions.Platforms.IncludePlatforms -join ',' } else { 'Not Configured' }
-            'PlatformExcludePlatforms'                = if ($pol.Conditions.Platforms.ExcludePlatforms) { $pol.Conditions.Platforms.ExcludePlatforms -join ',' } else { 'Not Configured' }
-            'DevicesFilterStatesMode'                 = if ($pol.Conditions.Devices.DeviceFilter.Mode) {$pol.Conditions.Devices.DeviceFilter.Mode -join ","} else {"Failed to Report"} 
-            'DevicesFilterStatesRule'                 = if ($pol.Conditions.Devices.DeviceFilter.Rule) {$pol.Conditions.Devices.DeviceFilter.Rule -join ","} else {"Failed to Report"}                       
+            'PlatformIncludePlatforms'                = if ($pol.conditions.platforms.IncludePlatforms) { $pol.conditions.platforms.IncludePlatforms -join ',' } else { 'Not Configured' }
+            'PlatformExcludePlatforms'                = if ($pol.conditions.platforms.ExcludePlatforms) { $pol.conditions.platforms.ExcludePlatforms -join ',' } else { 'Not Configured' }
+            'DevicesFilterStatesMode'                 = if ($pol.Conditions.Devices.DeviceFilter.Mode) {$pol.Conditions.Devices.DeviceFilter.Mode } else { 'Not Configured' } 
+            'DevicesFilterStatesRule'                 = if ($pol.Conditions.Devices.DeviceFilter.Rule) {$pol.Conditions.Devices.DeviceFilter.Rule } else { 'Not Configured' }
             'ApplicationIncludeApplications'          = if ($pol.Conditions.Applications.IncludeApplications) { ($pol.Conditions.Applications.IncludeApplications | ForEach-Object { Report-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
             'ApplicationExcludeApplications'          = if ($pol.Conditions.Applications.ExcludeApplications) { ($pol.Conditions.Applications.ExcludeApplications | ForEach-Object { Report-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
             'ApplicationIncludeUserActions'           = if ($pol.Conditions.Applications.IncludeUserActions) { $pol.Conditions.Applications.IncludeUserActions -join ',' } else { 'Not Configured' }
@@ -464,7 +506,15 @@ process {
 end {
 
     Write-Host 'Generating the Reports.' -ForegroundColor Green
-    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,UserIncludeUsers,UserExcludeUsers,UserIncludeGroups,UserExcludeGroups,ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DevicesFilterStatesMode,DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname    
+    $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,`
+    UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,`
+    ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DevicesFilterStatesMode,`
+    DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,`
+    LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
+    GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,`
+    CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,`
+    SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
+
     Write-Host '' 
     switch ($OutputFormat) {
         'All' { 
