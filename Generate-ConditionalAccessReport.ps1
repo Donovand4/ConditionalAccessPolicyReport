@@ -521,6 +521,8 @@ end {
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
             $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
             ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
+            $HTMLTableData = $namedLocations | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            # Named Locations export added to the All HTML option
+            ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
             
             Write-Host "Generating the CSV Reports. $($Filename.csv)" -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation -Delimiter ";"
@@ -529,10 +531,14 @@ end {
         'CSV' {
             Write-Host "Generating the CSV Reports. $($Filename.csv)" -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation -Delimiter ";"
+            $namedLocations | Export-Csv "$NamedLocationsFileName.csv" -NoTypeInformation -Delimiter ";" # Named Locations export added to the CSV option
+
         }
         'HTML' {
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
             $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
+            ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
+            $HTMLTableData = $namedLocations | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            # Named Locations export added to the HTML option
             ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
         }
     }
