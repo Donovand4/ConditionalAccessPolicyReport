@@ -243,11 +243,13 @@ header {
     color: #4C607B;
     }
   table, th, td {
-  	width: 450px;
+  	/* width: 450px; */
     border-collapse: collapse;
     border: solid;
     border: 1.5px solid black;
     padding: 3px;
+    table-layout: fixed;
+    width: 600%
 	}
   th {
     font-size: 1.2em;
@@ -256,7 +258,12 @@ header {
     color: #ffffff;
     }
   td {
-    color: #000000;    
+    color: #000000;
+    white-space: -o-pre-wrap;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;
     }
     tr:nth-child(even) {background-color: #d6d6d6;}
     #myDisplayNameFilterID {
@@ -381,11 +388,11 @@ function myMFAFilter(a)
   filter = a.toUpperCase();
   table = document.getElementById("myCATable");
   tr = table.getElementsByTagName("tr");
-  if (a == "all")
+  if (a == "all" || a == "mfa")
   {
     for (i = 0; i < tr.length; i++)
     {
-      td = tr[i].getElementsByTagName("td")[21];
+      td = tr[i].getElementsByTagName("td")[23];
       if (td)
       {
         tr[i].style.display = "";
@@ -397,7 +404,7 @@ function myMFAFilter(a)
     // Loop through all table rows, and hide those who don't match the search query
     for (i = 0; i < tr.length; i++)
     {
-      td = tr[i].getElementsByTagName("td")[21];
+      td = tr[i].getElementsByTagName("td")[23];
       if (td)
       {
         txtValue = td.textContent || td.innerText;
@@ -490,9 +497,9 @@ process {
             'GrantControlBuiltInControls'             = if ($pol.GrantControls.BuiltInControls) { $pol.GrantControls.BuiltInControls -join ',' } else { 'Not Configured' }
             'GrantControlTermsOfUse'                  = if ($pol.GrantControls.TermsOfUse) { $pol.GrantControls.TermsOfUse -join ',' } else { 'Not Configured' }
             'GrantControlOperator'                    = if ($pol.GrantControls.Operator) { $pol.GrantControls.Operator } else { 'Not Configured' }
-            'GrantControlCustomAuthenticationFactors' = if ($pol.GrantControls.CustomAuthenticationFactors) { $pol.GrantControls.CustomAuthenticationFactors -join ',' } else { 'Not Configured' }
-            'CloudAppSecurityCloudAppSecurityType'    = if ($pol.SessionControls.CloudAppSecurity.CloudAppSecurityType) { $pol.SessionControls.CloudAppSecurity.CloudAppSecurityType } else { 'Not Configured' }
-            'ApplicationEnforcedRestrictions'         = if ($pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled) { $pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled } else { 'Not Configured' }
+            'GrantControlCustomAuthFactors' = if ($pol.GrantControls.CustomAuthenticationFactors) { $pol.GrantControls.CustomAuthenticationFactors -join ',' } else { 'Not Configured' }
+            'CloudAppSecurityType'    = if ($pol.SessionControls.CloudAppSecurity.CloudAppSecurityType) { $pol.SessionControls.CloudAppSecurity.CloudAppSecurityType } else { 'Not Configured' }
+            'AppEnforcedRestrictions'         = if ($pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled) { $pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled } else { 'Not Configured' }
             'CloudAppSecurityIsEnabled'               = if ($pol.SessionControls.CloudAppSecurity.IsEnabled) { $pol.SessionControls.CloudAppSecurity.IsEnabled } else { 'Not Configured' }
             'PersistentBrowserIsEnabled'              = if ($pol.SessionControls.PersistentBrowser.IsEnabled) { $pol.SessionControls.PersistentBrowser.IsEnabled } else { 'Not Configured' }
             'PersistentBrowserMode'                   = if ($pol.SessionControls.PersistentBrowser.Mode) { $pol.SessionControls.PersistentBrowser.Mode } else { 'Not Configured' }
@@ -511,7 +518,7 @@ end {
     ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DevicesFilterStatesMode,`
     DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,`
     LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
-    GrantControlCustomAuthenticationFactors,ApplicationEnforcedRestrictions,CloudAppSecurityCloudAppSecurityType,`
+    GrantControlCustomAuthFactors,AppEnforcedRestrictions,CloudAppSecurityType,`
     CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,`
     SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
 
@@ -519,8 +526,13 @@ end {
     switch ($OutputFormat) {
         'All' { 
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
-            $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
-            ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
+            $CAreportDataHTML = $ReportData | ConvertTo-Html -As Table -PreContent "<h1>Conditional Access Policies</h1>" -PostContent "<br>"
+            $CAreportDataHTML = ($CAreportDataHTML.Replace("<table>", "<table id=`"myCATable`">"))
+            $NamedLocationsReportDataHTML = $namedLocations | ConvertTo-Html -As Table -PreContent "<h1>Named Locations</h1>" -PostContent "<br>"
+            $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<table>", "<table id=`"myNLTable`">"))
+            $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<td>", "<td class=`"table-CellNL`">"))
+            $report = ConvertTo-Html -Head $Head -Body "$HTMLBody $CAreportDataHTML $NamedLocationsReportDataHTML" -PostContent "<p>Creation Date: $($Date)</p>"
+            $report | Out-File "$Filename.html"
             
             Write-Host "Generating the CSV Reports. $($Filename.csv)" -ForegroundColor Green
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation -Delimiter ";"
@@ -532,12 +544,17 @@ end {
         }
         'HTML' {
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
-            $HTMLTableData = $ReportData | ConvertTo-Html -Head $Head -Body $HTMLBody -PostContent "<p>Creation Date: $($Date)</p>"            
-            ($HTMLTableData.Replace("<table>", "<table id=`"myCATable`">")) | Out-File "$Filename.html"
+            $CAreportDataHTML = $ReportData | ConvertTo-Html -As Table -PreContent "<h1>Conditional Access Policies</h1>" -PostContent "<br>"
+            $CAreportDataHTML = ($CAreportDataHTML.Replace("<table>", "<table id=`"myCATable`">"))
+            $NamedLocationsReportDataHTML = $namedLocations | ConvertTo-Html -As Table -PreContent "<h1>Named Locations</h1>" -PostContent "<br>"
+            $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<table>", "<table id=`"myNLTable`">"))
+            $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<td>", "<td class=`"table-CellNL`">"))
+            $report = ConvertTo-Html -Head $Head -Body "$HTMLBody $CAreportDataHTML $NamedLocationsReportDataHTML" -PostContent "<p>Creation Date: $($Date)</p>"
+            $report | Out-File "$Filename.html"
         }
     }
     Write-Host ''
     Write-Host 'Disconnecting from Microsoft Graph' -ForegroundColor Green
 
-    Disconnect-MgGraph
+    #Disconnect-MgGraph
 }
