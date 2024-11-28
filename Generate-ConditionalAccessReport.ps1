@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.3         Date Last Modified: 12 March 2024                   #  
+#   Version 1.4         Date Last Modified: 28 November 2024                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 12 March 2024
+    Date Last Modified: 28 November 2024
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -68,6 +68,8 @@
     12 March 2024: Updated module version,
                     Added directory roles,
                     resolved some filtering issues for platforms.
+    28 November 2024: Added namded locations to the HTML form,
+    			Updated the HTML table format.
 
 .LINK
     Github 
