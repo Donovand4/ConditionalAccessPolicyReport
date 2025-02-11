@@ -139,7 +139,7 @@ Begin {
               } 
               else 
               {
-                "LookingUpError-$($AppID)"
+                "LookUpError-$($AppID)"
               }
             }
         }
@@ -191,7 +191,7 @@ Begin {
                     $user
                 } 
                 else {
-                    "LookingUpError-$($ID)"
+                    "LookUpError-$($ID)"
                 }
             }
         }
@@ -210,7 +210,7 @@ Begin {
           } 
           else 
           {
-            "LookingUpError-$($ID)"
+            "LookUpError-$($ID)"
           }     
     }
     
@@ -229,7 +229,7 @@ Begin {
                     $group
                 }
                 else {
-                    "LookingUpError-$($ID)"
+                    "LookUpError-$($ID)"
                 }
             }
         }
@@ -324,6 +324,7 @@ $HTMLBody = @"
     <a href="#Disabled" onclick="myStateFilter('Disabled')"> Disabled</a>
     <a href="#Reporting" onclick="myStateFilter('EnabledForReportingButNotEnforced')"> Reporting</a>
     <a href="#MFA Enforced" onclick="myMFAFilter('Mfa')"> MFA Enforced</a>
+    <a href="#LookUpErrors" onclick="myLookupErrorFilter('LookupErrors')"> Lookup Errors</a>
   </div>
 </div>
 <input type="text" id="myDisplayNameFilterID" onkeyup="myDisplayNameFilter()" placeholder="Search for Display Names..">
@@ -449,6 +450,27 @@ function myDisplayNameFilter()
     }
   }
 }
+
+function myLookupErrorFilter()
+{
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  filter = "LookupError";
+  table = document.getElementById("myCATable");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++){
+    cells = tr[i].getElementsByTagName("td");
+    for (j = 0; j < cells.length; j++){
+      if (cells[j].textContent.includes(filter)){
+        tr[i].style.display = "";
+        break;
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+
 </script>
 
 "@
