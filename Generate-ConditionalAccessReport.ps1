@@ -258,6 +258,8 @@ header {
     text-align: center;
     background-color: #003366;
     color: #ffffff;
+    position: sticky;
+    top: 0;
     }
   td {
     color: #000000;
