@@ -29,7 +29,7 @@
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 28 November 2024
+    Date Last Modified: 11 February 2025
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -58,18 +58,21 @@
     $MaximumVariableCount = 8192
 
     Updates:
-    25 Apr 2023: Added improved filtering to HTML report, updated module versions.
-    21 Jun 2023: Updated module version, 
+    	25 Apr 2023: Added improved filtering to HTML report, updated module versions.
+    	21 Jun 2023: Updated module version, 
                   improved module imports to reduce run time, 
                   added All parameter for collecting policies,
                   default to beta profile for collecting policies. 
-    16 Nov 2023: Updated module version, 
+    	16 Nov 2023: Updated module version, 
                   added named locations report
-    12 March 2024: Updated module version,
+    	12 March 2024: Updated module version,
                     Added directory roles,
                     resolved some filtering issues for platforms.
-    28 November 2024: Added namded locations to the HTML form,
+    	28 November 2024: Added namded locations to the HTML form,
     			Updated the HTML table format.
+	11 February 2025: Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
+ 			Added functionality to the tables to freeze the column headers when scrolling down.
+ 		
 
 .LINK
     Github 
