@@ -8,26 +8,26 @@
     Open to suggestions.
 
 # Updates:
-    25 Apr 2023: 
+	25 Apr 2023: 
                 Added improved filtering to HTML report, updated module versions.
-    21 Jun 2023: 
-                Updated module version, 
-                improved module imports to reduce run time, 
-                added All parameter for collecting policies, 
-                default to beta profile for collecting policies. 
-    16 Nov 2023: 
-                Updated module version,
-                added named locations report
-    12 March 2024: 
-                Updated module version,
-                Added directory roles,
+	21 Jun 2023: 
+                Updated module version.
+                Improved module imports to reduce run time. 
+                Added All parameter for collecting policies. 
+                Default to beta profile for collecting policies. 
+	16 Nov 2023: 
+                Updated module version.
+                Added named locations report.
+	12 March 2024: 
+                Updated module version.
+                Added directory roles.
                 Aesolved some filtering issues for platforms.
-    28 November 2024: 
-                Added namded locations to the HTML form,
-    			Updated the HTML table format.
-	11 February 2025: 
-                 Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
- 			    Added functionality to the tables to freeze the column headers when scrolling down.
+	28 November 2024: 
+                Added namded locations to the HTML form.
+                Updated the HTML table format.
+    11 February 2025:
+                Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
+                Added functionality to the tables to freeze the column headers when scrolling down.
 
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
