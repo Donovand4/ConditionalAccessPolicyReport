@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.4         Date Last Modified: 28 November 2024                #  
+#   Version 1.5         Date Last Modified: 28 February 2025                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 11 February 2025
+    Date Last Modified: 28 February 2025
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -72,6 +72,7 @@
     			Updated the HTML table format.
 	11 February 2025: Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
  			Added functionality to the tables to freeze the column headers when scrolling down.
+      28 February 2025: Added a user and insider risk conditions.
  		
 
 .LINK
@@ -504,7 +505,7 @@ process {
             'Description'                             = $pol.Description
             'State'                                   = $pol.state
             'ID'                                      = $pol.id
-            'createdDateTime'                         = if ($pol.createdDateTime) { $pol.createdDateTime } else { 'Null' }          
+            'createdDateTime'                         = if ($pol.createdDateTime) { $pol.createdDateTime } else { 'Null' }
             'ModifiedDateTime'                        = if ($pol.ModifiedDateTime) { $pol.ModifiedDateTime } else { 'Null' }
             'UserIncludeUsers'                        = if ($pol.Conditions.Users.IncludeUsers) { ($pol.Conditions.Users.IncludeUsers | ForEach-Object { (Report-Users -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'DirectoryRolesInclude'                   = if ($pol.Conditions.Users.IncludeRoles) { ($pol.Conditions.Users.IncludeRoles | ForEach-Object { (Report-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
@@ -512,7 +513,9 @@ process {
             'DirectoryRolesExclude'                   = if ($pol.Conditions.Users.ExcludeRoles) { ($pol.Conditions.Users.ExcludeRoles | ForEach-Object { (Report-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'UserIncludeGroups'                       = if ($pol.Conditions.Users.IncludeGroups) { ($pol.Conditions.Users.IncludeGroups | ForEach-Object { (Report-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
             'UserExcludeGroups'                       = if ($pol.Conditions.Users.ExcludeGroups) { ($pol.Conditions.Users.ExcludeGroups | ForEach-Object { (Report-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'ConditionUserRiskLevels'                 = if ($pol.Conditions.UserRiskLevels) { $pol.Conditions.UserRiskLevels -join ',' } else { 'Not Configured' }
             'ConditionSignInRiskLevels'               = if ($pol.Conditions.SignInRiskLevels) { $pol.Conditions.SignInRiskLevels -join ',' } else { 'Not Configured' }
+            'ConditionInsiderRiskLevels'              = if ($pol.Conditions.InsiderRiskLevels) { $pol.Conditions.InsiderRiskLevels -join ',' } else { 'Not Configured' }
             'ConditionClientAppTypes'                 = if ($pol.Conditions.ClientAppTypes) { $pol.Conditions.ClientAppTypes -join ',' } else { 'Not Configured' }
             'PlatformIncludePlatforms'                = if ($pol.conditions.platforms.IncludePlatforms) { $pol.conditions.platforms.IncludePlatforms -join ',' } else { 'Not Configured' }
             'PlatformExcludePlatforms'                = if ($pol.conditions.platforms.ExcludePlatforms) { $pol.conditions.platforms.ExcludePlatforms -join ',' } else { 'Not Configured' }
@@ -526,9 +529,9 @@ process {
             'GrantControlBuiltInControls'             = if ($pol.GrantControls.BuiltInControls) { $pol.GrantControls.BuiltInControls -join ',' } else { 'Not Configured' }
             'GrantControlTermsOfUse'                  = if ($pol.GrantControls.TermsOfUse) { $pol.GrantControls.TermsOfUse -join ',' } else { 'Not Configured' }
             'GrantControlOperator'                    = if ($pol.GrantControls.Operator) { $pol.GrantControls.Operator } else { 'Not Configured' }
-            'GrantControlCustomAuthFactors' = if ($pol.GrantControls.CustomAuthenticationFactors) { $pol.GrantControls.CustomAuthenticationFactors -join ',' } else { 'Not Configured' }
-            'CloudAppSecurityType'    = if ($pol.SessionControls.CloudAppSecurity.CloudAppSecurityType) { $pol.SessionControls.CloudAppSecurity.CloudAppSecurityType } else { 'Not Configured' }
-            'AppEnforcedRestrictions'         = if ($pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled) { $pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled } else { 'Not Configured' }
+            'GrantControlCustomAuthFactors'           = if ($pol.GrantControls.CustomAuthenticationFactors) { $pol.GrantControls.CustomAuthenticationFactors -join ',' } else { 'Not Configured' }
+            'CloudAppSecurityType'                    = if ($pol.SessionControls.CloudAppSecurity.CloudAppSecurityType) { $pol.SessionControls.CloudAppSecurity.CloudAppSecurityType } else { 'Not Configured' }
+            'AppEnforcedRestrictions'                 = if ($pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled) { $pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled } else { 'Not Configured' }
             'CloudAppSecurityIsEnabled'               = if ($pol.SessionControls.CloudAppSecurity.IsEnabled) { $pol.SessionControls.CloudAppSecurity.IsEnabled } else { 'Not Configured' }
             'PersistentBrowserIsEnabled'              = if ($pol.SessionControls.PersistentBrowser.IsEnabled) { $pol.SessionControls.PersistentBrowser.IsEnabled } else { 'Not Configured' }
             'PersistentBrowserMode'                   = if ($pol.SessionControls.PersistentBrowser.Mode) { $pol.SessionControls.PersistentBrowser.Mode } else { 'Not Configured' }
@@ -544,7 +547,7 @@ end {
     Write-Host 'Generating the Reports.' -ForegroundColor Green
     $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,`
     UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,`
-    ConditionSignInRiskLevels,ConditionClientAppTypes,PlatformIncludePlatforms,PlatformExcludePlatforms,DevicesFilterStatesMode,`
+    ConditionUserRiskLevels,ConditionSignInRiskLevels,ConditionInsiderRiskLevels,ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DevicesFilterStatesMode,`
     DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,`
     LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
     GrantControlCustomAuthFactors,AppEnforcedRestrictions,CloudAppSecurityType,`
@@ -585,5 +588,5 @@ end {
     Write-Host ''
     Write-Host 'Disconnecting from Microsoft Graph' -ForegroundColor Green
 
-    #Disconnect-MgGraph
+    Disconnect-MgGraph
 }
