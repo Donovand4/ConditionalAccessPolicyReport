@@ -28,6 +28,9 @@
     11 February 2025:
                 Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
                 Added functionality to the tables to freeze the column headers when scrolling down.
+    28 February 2025:
+                Added the missing User Risk Condition.
+                Add the new Insider Risk Condition.
 
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
