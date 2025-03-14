@@ -328,6 +328,7 @@ $HTMLBody = @"
     <a href="#Disabled" onclick="myStateFilter('Disabled')"> Disabled</a>
     <a href="#Reporting" onclick="myStateFilter('EnabledForReportingButNotEnforced')"> Reporting</a>
     <a href="#MFA Enforced" onclick="myMFAFilter('Mfa')"> MFA Enforced</a>
+    <a href="#Block Policy" onclick="myBlockFilter('BlockPolicy')"> Block Policy</a>
     <a href="#LookUpErrors" onclick="myLookupErrorFilter('LookupErrors')"> Lookup Errors</a>
   </div>
 </div>
@@ -390,30 +391,87 @@ window.onclick = function(event) {
     }
   }
 
-function myMFAFilter(a)
-{
-  // Declare variables
-  var input, filter, table, tr, td, i, txtValue;
-  filter = a.toUpperCase();
-  table = document.getElementById("myCATable");
-  tr = table.getElementsByTagName("tr");
-  if (a == "all" || a == "mfa")
+  function myMFAFilter(a)
   {
-    for (i = 0; i < tr.length; i++)
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue;
+    filter = a.toUpperCase();
+    table = document.getElementById("myCATable");
+    tr = table.getElementsByTagName("tr");
+    if (a == "all" || a == "mfa")
     {
-      td = tr[i].getElementsByTagName("td")[23];
-      if (td)
+      for (i = 0; i < tr.length; i++)
       {
-        tr[i].style.display = "";
+        td = tr[i].getElementsByTagName("td")[25];
+        if (td)
+        {
+          tr[i].style.display = "";
+        }
+      }
+    }
+    else
+    {
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[25];
+        if (td)
+        {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1)
+          {
+            tr[i].style.display = "";
+          } else
+          {
+            tr[i].style.display = "none";
+          }
+        }
       }
     }
   }
-  else
+
+function myLookupErrorFilter()
+{
+  // Declare variables
+  var filter, table, tr, td, i, j, txtValue;
+  filter = "LookupError".toLowerCase();
+  table = document.getElementById("myCATable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 1; i < tr.length; i++)
+  { // Start from 1 to skip the header row
+    var cells = tr[i].getElementsByTagName("td");
+    var rowContainsFilter = false;
+
+    for (j = 0; j < cells.length; j++)
+    {
+      if (cells[j].textContent.toLowerCase().includes(filter))
+      {
+        rowContainsFilter = true;
+        break;
+      }
+    }
+
+    if (rowContainsFilter)
+    {
+      tr[i].style.display = "";
+    } else
+    {
+      tr[i].style.display = "none";
+    }
+  }
+}
+
+  function myBlockFilter()
   {
-    // Loop through all table rows, and hide those who don't match the search query
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue;
+    filter = "block".toUpperCase();
+    table = document.getElementById("myCATable");
+    tr = table.getElementsByTagName("tr");
     for (i = 0; i < tr.length; i++)
     {
-      td = tr[i].getElementsByTagName("td")[23];
+      td = tr[i].getElementsByTagName("td")[25];
       if (td)
       {
         txtValue = td.textContent || td.innerText;
@@ -427,7 +485,8 @@ function myMFAFilter(a)
       }
     }
   }
-}
+
+
 
 function myDisplayNameFilter()
 {
@@ -449,26 +508,6 @@ function myDisplayNameFilter()
         tr[i].style.display = "";
       } else
       {
-        tr[i].style.display = "none";
-      }
-    }
-  }
-}
-
-function myLookupErrorFilter()
-{
-  // Declare variables
-  var input, filter, table, tr, td, i, txtValue;
-  filter = "LookupError";
-  table = document.getElementById("myCATable");
-  tr = table.getElementsByTagName("tr");
-  for (i = 0; i < tr.length; i++){
-    cells = tr[i].getElementsByTagName("td");
-    for (j = 0; j < cells.length; j++){
-      if (cells[j].textContent.includes(filter)){
-        tr[i].style.display = "";
-        break;
-      } else {
         tr[i].style.display = "none";
       }
     }
