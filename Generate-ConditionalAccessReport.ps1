@@ -84,7 +84,9 @@
 [CmdletBinding()]
 param (
 [Parameter(Mandatory = $true, Position = 0)] [ValidateSet('All', 'CSV', 'HTML')] $OutputFormat,
-    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID
+    [Parameter(Mandatory = $False, Position = 1)] [String] $TenantID,
+    [Parameter(Mandatory = $False, Position = 2)] [string] $AppID,
+    [Parameter(Mandatory = $False, Position = 3)] [string] $CertificateThumbprint
 )
 #Requires -Version 5.1
 #Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.25.0" }
@@ -98,17 +100,29 @@ Begin {
     Write-Host 'Importing the modules...'
 
     Write-Host 'Logging into Microsoft Graph' -ForegroundColor Green
-    if ($TenantID.Length -eq 0) {
-        try {
-            Write-Host "Trying to connect without tenant ID"
-            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -NoWelcome
-        }
-        catch {
-            Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
+
+    # Validate parameter dependencies
+    $usingCertAuth = $AppID -or $CertificateThumbprint
+
+    if ($usingCertAuth) {
+        if (-not ($AppID -and $CertificateThumbprint -and $TenantID)) {
+            Write-Host 'When using AppID and CertificateThumbprint, you must also provide TenantID. All three parameters are required together. Exiting.......' -ForegroundColor Red
             Start-Sleep -Seconds 2
             Exit
         }
-    } else {
+    }
+
+    if ($TenantID.Length -eq 0) {
+      try {
+          Write-Host "Trying to connect without tenant ID"
+          Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -NoWelcome
+      }
+      catch {
+          Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
+          Start-Sleep -Seconds 2
+          Exit
+      }
+  } elseif($TenantID -and !$usingCertAuth) {
         try {
             Write-Host "Trying to connect to tenant: $TenantID"
             Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -TenantId $TenantID -NoWelcome
@@ -118,6 +132,35 @@ Begin {
             Start-Sleep -Seconds 2
             Exit
         }
+    } elseif($TenantID -and $usingCertAuth) {
+      try {
+          Write-Host "Connecting to Microsoft Graph using App Registration..." -ForegroundColor Green
+     
+          # Normalize thumbprint (remove spaces, make uppercase for comparison)
+          $CertificateThumbprint = $CertificateThumbprint -replace '\s', '' | ForEach-Object { $_.ToUpper() }
+
+          # Try to find the cert in CurrentUser store
+          $cert = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $CertificateThumbprint }
+
+          if(!$cert){ 
+            $cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $CertificateThumbprint } 
+          }
+
+          if (-not $cert) {
+              Write-Host "Certificate with the given thumbprint not found in Current User or Local machine store" -ForegroundColor Red
+              Start-Sleep -Seconds 2
+              Exit
+          } else {
+              Write-Host "Certificate found. Continuing...`n" -ForegroundColor Green
+              Connect-MgGraph -ClientId $AppID -CertificateThumbprint $CertificateThumbprint -TenantId $TenantID -NoWelcome
+          }
+    }
+    catch {
+        Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
+        Start-Sleep -Seconds 2
+        Exit
+    }
+
     }
     
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green
