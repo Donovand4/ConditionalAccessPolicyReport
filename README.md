@@ -31,6 +31,8 @@
     28 February 2025:
                 Added the missing User Risk Condition.
                 Add the new Insider Risk Condition.
+    11 April 2025:
+                Added certificate authentication.
 
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
@@ -50,6 +52,8 @@
     5.  Review and accept the required permissions.
     6.  The report can be executed as soon as the permissions are granted on the application.
     
+    Optional: Certificate authentiction requires that permissions 'Policy.Read.All', 'Directory.Read.All' are added to the application before authenticating. 
+    
 # Example
     Generates a report in the CSV and HTML format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All -TenantID <TenantID>
@@ -59,6 +63,10 @@
 
     Generates a report in the HTML format in the same location where the script is located.
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat HTML
+    
+    Generates a report in the All formats using AppID and CertificateThumbprint
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All -TenantID <TenantID> -AppID <AppID> -CertificateThumbprint <CertificateThumbprint>
+
 # Outputs
     Exports .html and .csv files that contains the Conditional Access policies and Named Locations
 # Notes
