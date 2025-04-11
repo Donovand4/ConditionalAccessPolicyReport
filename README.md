@@ -52,7 +52,7 @@
     5.  Review and accept the required permissions.
     6.  The report can be executed as soon as the permissions are granted on the application.
     
-    Optional: Certificate authentiction requires that permissions 'Policy.Read.All', 'Directory.Read.All' are added to the application before authenticating. 
+    Optional: Certificate authentication requires that permissions 'Policy.Read.All', 'Directory.Read.All' are added to the application before authenticating. 
     
 # Example
     Generates a report in the CSV and HTML format in the same location where the script is located.
