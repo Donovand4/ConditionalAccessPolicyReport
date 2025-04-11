@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.5         Date Last Modified: 28 February 2025                #  
+#   Version 1.5         Date Last Modified: 11 April 2025                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 28 February 2025
+    Date Last Modified: 11 April 2025
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -40,7 +40,10 @@
     PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat CSV
 .EXAMPLE
     Generates a report in the HTML format
-    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat HTML    
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat HTML
+.EXAMPLE
+    Generates a report in the All formats using AppID and CertificateThumbprint
+    PS C:\> Generate-ConditionalAccessReport.ps1 -OutputFormat All -TenantID <TenantID> -AppID <AppID> -CertificateThumbprint <CertificateThumbprint>
 .INPUTS
    No inputs
 .OUTPUTS
@@ -49,8 +52,6 @@
     The script will connect to the Microsoft Graph service and collect the required information. 
     To install the latest modules:
     Install-Module Microsoft.Graph -AllowClobber -Force
-
-    If there are any missing policies, then rerun the script using the Beta profile parameter and compare the output.
 
     If PowerShell logs an error message for MaximumFunctionCount or MaximumVariableCount. This can be increased using the below.
     
@@ -73,6 +74,7 @@
 	11 February 2025: Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
  			Added functionality to the tables to freeze the column headers when scrolling down.
       28 February 2025: Added a user and insider risk conditions.
+      11 April 2025: Added certificate authentication support for the script.
  		
 
 .LINK
