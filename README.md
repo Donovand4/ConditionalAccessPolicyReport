@@ -37,6 +37,7 @@
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
     The report will resolve all ID's used within the policies for users, groups, named locations and applications.
+    
 # Getting Started
     Below is a list of steps recommended to allow the report to authenticate and retrieve the information required.
     Steps:
@@ -69,6 +70,8 @@
 
 # Outputs
     Exports .html and .csv files that contains the Conditional Access policies and Named Locations
+    When opening or importing the .csv file, ensure proper formatting by defining the delimiter as a semi-colon.
+    
 # Notes
     The script will connect to the Microsoft Graph service and collect the required information.     
     If PowerShell logs an error message for MaximumFunctionCount or MaximumVariableCount. This can be increased using the below.    
