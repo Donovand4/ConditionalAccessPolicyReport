@@ -1,0 +1,233 @@
+<div class="dropdown">
+  <button onclick="myDropdownFunction()" class="dropbtn">Quick Filter</button>
+  <div id="myDropdown" class="dropdown-content">
+    <a href="#All Policies" onclick="myStateFilter('all')"> Clear filters</a>
+    <a href="#Enabled" onclick="myStateFilter('Enabled')">Enabled</a>
+    <a href="#Disabled" onclick="myStateFilter('Disabled')"> Disabled</a>
+    <a href="#Reporting" onclick="myStateFilter('EnabledForReportingButNotEnforced')"> Reporting</a>
+    <a href="#MFA Enforced" onclick="myMFAFilter('Mfa')"> MFA Enforced</a>
+    <a href="#Block Policy" onclick="myBlockFilter('BlockPolicy')"> Block Policy</a>
+    <a href="#LookUpErrors" onclick="myLookupErrorFilter('LookupErrors')"> Lookup Errors</a>
+  </div>
+</div>
+<input type="text" id="myDisplayNameFilterID" onkeyup="myDisplayNameFilter()" placeholder="Search for Display Names..">
+<br>
+<script>
+function myDropdownFunction() {
+  document.getElementById("myDropdown").classList.toggle("show");
+}
+
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+
+    function myStateFilter(a)
+  {
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue, columnName, columnIndex;
+    filter = a.toUpperCase();
+    columnName = "State";
+    table = document.getElementById("myCATable");
+    tr = table.getElementsByTagName("tr");
+    // Find the index of the column with the specified name
+    var headerRow = tr[0].getElementsByTagName("th");
+    for (i = 0; i < headerRow.length; i++)
+    {
+      if (headerRow[i].textContent === columnName)
+      {
+        columnIndex = i;
+        break;
+      }
+    }
+
+    if (a == "all")
+    {
+        for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[columnIndex];
+        if (td)
+        {
+          tr[i].style.display = "";
+        }
+      }
+    }
+    else{
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[columnIndex];
+        if (td)
+        {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1)
+          {
+            tr[i].style.display = "";
+          } else
+          {
+            tr[i].style.display = "none";
+          }
+        }
+      }
+    }
+  }
+
+
+  function myMFAFilter(a)
+  {
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue, columnName, columnIndex;
+    filter = a.toUpperCase();
+    columnName = "GrantControlBuiltInControls";
+    table = document.getElementById("myCATable");
+    tr = table.getElementsByTagName("tr");
+    // Find the index of the column with the specified name
+    var headerRow = tr[0].getElementsByTagName("th");
+    for (i = 0; i < headerRow.length; i++)
+    {
+      if (headerRow[i].textContent === columnName)
+      {
+        columnIndex = i;
+        break;
+      }
+    }
+
+    if (a == "all" || a == "mfa")
+    {
+      for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[columnIndex];
+        if (td)
+        {
+          tr[i].style.display = "";
+        }
+      }
+    }
+    else
+    {
+      // Loop through all table rows, and hide those who don't match the search query
+      for (i = 0; i < tr.length; i++)
+      {
+        td = tr[i].getElementsByTagName("td")[columnIndex];
+        if (td)
+        {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1)
+          {
+            tr[i].style.display = "";
+          } else
+          {
+            tr[i].style.display = "none";
+          }
+        }
+      }
+    }
+  }
+
+function myLookupErrorFilter()
+{
+  // Declare variables
+  var filter, table, tr, td, i, j, txtValue;
+  filter = "LookupError".toLowerCase();
+  table = document.getElementById("myCATable");
+  tr = table.getElementsByTagName("tr");
+
+  for (i = 1; i < tr.length; i++)
+  { // Start from 1 to skip the header row
+    var cells = tr[i].getElementsByTagName("td");
+    var rowContainsFilter = false;
+
+    for (j = 0; j < cells.length; j++)
+    {
+      if (cells[j].textContent.toLowerCase().includes(filter))
+      {
+        rowContainsFilter = true;
+        break;
+      }
+    }
+
+    if (rowContainsFilter)
+    {
+      tr[i].style.display = "";
+    } else
+    {
+      tr[i].style.display = "none";
+    }
+  }
+}
+
+  function myBlockFilter()
+  {
+    // Declare variables
+    var input, filter, table, tr, td, i, txtValue, columnName, columnIndex;
+    filter = "block".toUpperCase();
+    columnName = "GrantControlBuiltInControls";
+    table = document.getElementById("myCATable");
+    tr = table.getElementsByTagName("tr");
+
+    // Find the index of the column with the specified name
+    var headerRow = tr[0].getElementsByTagName("th");
+    for (i = 0; i < headerRow.length; i++)
+    {
+      if (headerRow[i].textContent === columnName)
+      {
+        columnIndex = i;
+        break;
+      }
+    }
+
+    for (i = 0; i < tr.length; i++)
+    {
+      td = tr[i].getElementsByTagName("td")[columnIndex];
+      if (td)
+      {
+        txtValue = td.textContent || td.innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1)
+        {
+          tr[i].style.display = "";
+        } else
+        {
+          tr[i].style.display = "none";
+        }
+      }
+    }
+  }
+
+
+
+function myDisplayNameFilter()
+{
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myDisplayNameFilterID");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("myCATable");
+  tr = table.getElementsByTagName("tr");
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++)
+  {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td)
+    {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1)
+      {
+        tr[i].style.display = "";
+      } else
+      {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+
+</script>

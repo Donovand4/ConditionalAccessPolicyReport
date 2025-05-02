@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.5         Date Last Modified: 11 April 2025                #  
+#   Version 1.6         Date Last Modified: 2 May 2025                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 11 April 2025
+    Date Last Modified: 2 May 2025
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -75,6 +75,8 @@
  			Added functionality to the tables to freeze the column headers when scrolling down.
       28 February 2025: Added a user and insider risk conditions.
       11 April 2025: Added certificate authentication support for the script.
+      2 May 2025: Split out the CSS and HTML body into separate files to reduce the length of the script. 
+      Both the Htmlbody are required for the HTML report to work. These files must be in the same directory as the script.
  		
 
 .LINK
@@ -170,6 +172,24 @@ Begin {
     $Filename = "ConditionalAccessReport - $($Date)"
     $NamedLocationsFileName = "NamedLocations - $($Date)"
 
+
+    $ExternalStyle = get-content -path ".\Style.css" -Raw -ErrorAction SilentlyContinue ## Load the CSS file for formatting the HTML report
+    $StyleSheet = ("<style>`n") + $ExternalStyle + ("`n</style>")
+    $PageHeader = "<h1><center>Conditional Access Policies Report - $($date)</center></h1>"
+    $htmlBodyfile = get-content -Path ".\Htmlbody.txt" -Raw -ErrorAction SilentlyContinue ##Body format with filter scripts
+
+    if (-not $htmlBodyfile) {
+        Write-Host 'HTML body file not found. Exiting.......' -ForegroundColor Red
+        Start-Sleep -Seconds 2
+        Exit
+    }
+
+    if (-not $ExternalStyle) {
+        Write-Host 'CSS file not found. Exiting.......' -ForegroundColor Red
+        Start-Sleep -Seconds 2
+        Exit
+    }
+    
     function Report-DirectoryApps {
         param (
             [Parameter(Mandatory = $true)]
@@ -282,324 +302,7 @@ Begin {
                 }
             }
         }
-    }   
-    $Head = @'
-<style>
-header {
-    text-align: center;
-  }
-  body {
-    font-family: "Arial";
-    font-size: 10pt;
-    color: #4C607B;
     }
-  table, th, td {
-  	/* width: 450px; */
-    border-collapse: collapse;
-    border: solid;
-    border: 1.5px solid black;
-    padding: 3px;
-    table-layout: fixed;
-    width: 600%
-	}
-  th {
-    font-size: 1.2em;
-    text-align: center;
-    background-color: #003366;
-    color: #ffffff;
-    position: sticky;
-    top: 0;
-    }
-  td {
-    color: #000000;
-    white-space: -o-pre-wrap;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    white-space: -moz-pre-wrap;
-    white-space: -pre-wrap;
-    }
-    tr:nth-child(even) {background-color: #d6d6d6;}
-    #myDisplayNameFilterID {
-    width: 75%;
-    font-size: 18px;
-    padding: 10px 20px 10px 20px;
-    border: 1.5px solid #ddd; 
-    margin-bottom: 15px;
-    }
-.dropbtn {
-  background-color: #003366;
-  color: white;
-  padding: 16px;
-  font-size: 20px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
-.dropbtn:hover, .dropbtn:focus {
-  background-color: #b8d5e9;
-}
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  overflow: auto;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
-}
-.dropdown-content a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-}
-.dropdown a:hover {background-color: #ddd;}
-.show {display: block;}
-</style>
-'@
-
-##Body format with filter scripts
-$HTMLBody = @"
-<font color="Black"><h1><center>Conditional Access Policies Report - $($date)</center></h1></font>
-<div class="dropdown">
-  <button onclick="myDropdownFunction()" class="dropbtn">Quick Filter</button>
-  <div id="myDropdown" class="dropdown-content">
-    <a href="#All Policies" onclick="myStateFilter('all')"> Clear filters</a>
-    <a href="#Enabled" onclick="myStateFilter('Enabled')">Enabled</a>
-    <a href="#Disabled" onclick="myStateFilter('Disabled')"> Disabled</a>
-    <a href="#Reporting" onclick="myStateFilter('EnabledForReportingButNotEnforced')"> Reporting</a>
-    <a href="#MFA Enforced" onclick="myMFAFilter('Mfa')"> MFA Enforced</a>
-    <a href="#Block Policy" onclick="myBlockFilter('BlockPolicy')"> Block Policy</a>
-    <a href="#LookUpErrors" onclick="myLookupErrorFilter('LookupErrors')"> Lookup Errors</a>
-  </div>
-</div>
-<input type="text" id="myDisplayNameFilterID" onkeyup="myDisplayNameFilter()" placeholder="Search for Display Names..">
-<br>
-<script>
-function myDropdownFunction() {
-  document.getElementById("myDropdown").classList.toggle("show");
-}
-
-// Close the dropdown if the user clicks outside of it
-window.onclick = function(event) {
-  if (!event.target.matches('.dropbtn')) {
-    var dropdowns = document.getElementsByClassName("dropdown-content");
-    var i;
-    for (i = 0; i < dropdowns.length; i++) {
-      var openDropdown = dropdowns[i];
-      if (openDropdown.classList.contains('show')) {
-        openDropdown.classList.remove('show');
-      }
-    }
-  }
-}
-
-    function myStateFilter(a)
-  {
-    // Declare variables
-    var input, filter, table, tr, td, i, txtValue, columnName, columnIndex;
-    filter = a.toUpperCase();
-    columnName = "State";
-    table = document.getElementById("myCATable");
-    tr = table.getElementsByTagName("tr");
-    // Find the index of the column with the specified name
-    var headerRow = tr[0].getElementsByTagName("th");
-    for (i = 0; i < headerRow.length; i++)
-    {
-      if (headerRow[i].textContent === columnName)
-      {
-        columnIndex = i;
-        break;
-      }
-    }
-
-    if (a == "all")
-    {
-        for (i = 0; i < tr.length; i++)
-      {
-        td = tr[i].getElementsByTagName("td")[columnIndex];
-        if (td)
-        {
-          tr[i].style.display = "";
-        }
-      }
-    }
-    else{
-      // Loop through all table rows, and hide those who don't match the search query
-      for (i = 0; i < tr.length; i++)
-      {
-        td = tr[i].getElementsByTagName("td")[columnIndex];
-        if (td)
-        {
-          txtValue = td.textContent || td.innerText;
-          if (txtValue.toUpperCase().indexOf(filter) > -1)
-          {
-            tr[i].style.display = "";
-          } else
-          {
-            tr[i].style.display = "none";
-          }
-        }
-      }
-    }
-  }
-
-
-  function myMFAFilter(a)
-  {
-    // Declare variables
-    var input, filter, table, tr, td, i, txtValue, columnName, columnIndex;
-    filter = a.toUpperCase();
-    columnName = "GrantControlBuiltInControls";
-    table = document.getElementById("myCATable");
-    tr = table.getElementsByTagName("tr");
-    // Find the index of the column with the specified name
-    var headerRow = tr[0].getElementsByTagName("th");
-    for (i = 0; i < headerRow.length; i++)
-    {
-      if (headerRow[i].textContent === columnName)
-      {
-        columnIndex = i;
-        break;
-      }
-    }
-
-    if (a == "all" || a == "mfa")
-    {
-      for (i = 0; i < tr.length; i++)
-      {
-        td = tr[i].getElementsByTagName("td")[columnIndex];
-        if (td)
-        {
-          tr[i].style.display = "";
-        }
-      }
-    }
-    else
-    {
-      // Loop through all table rows, and hide those who don't match the search query
-      for (i = 0; i < tr.length; i++)
-      {
-        td = tr[i].getElementsByTagName("td")[columnIndex];
-        if (td)
-        {
-          txtValue = td.textContent || td.innerText;
-          if (txtValue.toUpperCase().indexOf(filter) > -1)
-          {
-            tr[i].style.display = "";
-          } else
-          {
-            tr[i].style.display = "none";
-          }
-        }
-      }
-    }
-  }
-
-function myLookupErrorFilter()
-{
-  // Declare variables
-  var filter, table, tr, td, i, j, txtValue;
-  filter = "LookupError".toLowerCase();
-  table = document.getElementById("myCATable");
-  tr = table.getElementsByTagName("tr");
-
-  for (i = 1; i < tr.length; i++)
-  { // Start from 1 to skip the header row
-    var cells = tr[i].getElementsByTagName("td");
-    var rowContainsFilter = false;
-
-    for (j = 0; j < cells.length; j++)
-    {
-      if (cells[j].textContent.toLowerCase().includes(filter))
-      {
-        rowContainsFilter = true;
-        break;
-      }
-    }
-
-    if (rowContainsFilter)
-    {
-      tr[i].style.display = "";
-    } else
-    {
-      tr[i].style.display = "none";
-    }
-  }
-}
-
-  function myBlockFilter()
-  {
-    // Declare variables
-    var input, filter, table, tr, td, i, txtValue, columnName, columnIndex;
-    filter = "block".toUpperCase();
-    columnName = "GrantControlBuiltInControls";
-    table = document.getElementById("myCATable");
-    tr = table.getElementsByTagName("tr");
-
-    // Find the index of the column with the specified name
-    var headerRow = tr[0].getElementsByTagName("th");
-    for (i = 0; i < headerRow.length; i++)
-    {
-      if (headerRow[i].textContent === columnName)
-      {
-        columnIndex = i;
-        break;
-      }
-    }
-
-    for (i = 0; i < tr.length; i++)
-    {
-      td = tr[i].getElementsByTagName("td")[columnIndex];
-      if (td)
-      {
-        txtValue = td.textContent || td.innerText;
-        if (txtValue.toUpperCase().indexOf(filter) > -1)
-        {
-          tr[i].style.display = "";
-        } else
-        {
-          tr[i].style.display = "none";
-        }
-      }
-    }
-  }
-
-
-
-function myDisplayNameFilter()
-{
-  // Declare variables
-  var input, filter, table, tr, td, i, txtValue;
-  input = document.getElementById("myDisplayNameFilterID");
-  filter = input.value.toUpperCase();
-  table = document.getElementById("myCATable");
-  tr = table.getElementsByTagName("tr");
-  // Loop through all table rows, and hide those who don't match the search query
-  for (i = 0; i < tr.length; i++)
-  {
-    td = tr[i].getElementsByTagName("td")[0];
-    if (td)
-    {
-      txtValue = td.textContent || td.innerText;
-      if (txtValue.toUpperCase().indexOf(filter) > -1)
-      {
-        tr[i].style.display = "";
-      } else
-      {
-        tr[i].style.display = "none";
-      }
-    }
-  }
-}
-
-</script>
-
-"@
 }
 
 process {
@@ -682,10 +385,12 @@ end {
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
             $CAreportDataHTML = $ReportData | ConvertTo-Html -As Table -PreContent "<h1>Conditional Access Policies</h1>" -PostContent "<br>"
             $CAreportDataHTML = ($CAreportDataHTML.Replace("<table>", "<table id=`"myCATable`">"))
+            $CAreportDataHTML = ($CAreportDataHTML.Replace("<title>HTML TABLE</title>", ""))
             $NamedLocationsReportDataHTML = $namedLocations | ConvertTo-Html -As Table -PreContent "<h1>Named Locations</h1>" -PostContent "<br>"
             $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<table>", "<table id=`"myNLTable`">"))
             $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<td>", "<td class=`"table-CellNL`">"))
-            $report = ConvertTo-Html -Head $Head -Body "$HTMLBody $CAreportDataHTML $NamedLocationsReportDataHTML" -PostContent "<p>Creation Date: $($Date)</p>"
+            $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<title>HTML TABLE</title>", ""))
+            $report = ConvertTo-Html -Head $StyleSheet -Title "Conditional Access Policies Report" -Body "$PageHeader $htmlBodyfile $CAreportDataHTML $NamedLocationsReportDataHTML" -PostContent "<p>Creation Date: $($Date)</p>"
             $report | Out-File "$Filename.html"
             
             Write-Host "Generating the CSV Reports. $($Filename.csv)" -ForegroundColor Green
@@ -700,10 +405,12 @@ end {
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
             $CAreportDataHTML = $ReportData | ConvertTo-Html -As Table -PreContent "<h1>Conditional Access Policies</h1>" -PostContent "<br>"
             $CAreportDataHTML = ($CAreportDataHTML.Replace("<table>", "<table id=`"myCATable`">"))
+            $CAreportDataHTML = ($CAreportDataHTML.Replace("<title>HTML TABLE</title>", ""))
             $NamedLocationsReportDataHTML = $namedLocations | ConvertTo-Html -As Table -PreContent "<h1>Named Locations</h1>" -PostContent "<br>"
             $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<table>", "<table id=`"myNLTable`">"))
             $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<td>", "<td class=`"table-CellNL`">"))
-            $report = ConvertTo-Html -Head $Head -Body "$HTMLBody $CAreportDataHTML $NamedLocationsReportDataHTML" -PostContent "<p>Creation Date: $($Date)</p>"
+            $NamedLocationsReportDataHTML = ($NamedLocationsReportDataHTML.Replace("<title>HTML TABLE</title>", ""))
+            $report = ConvertTo-Html -Head $StyleSheet -Title "Conditional Access Policies Report" -Body "$PageHeader $htmlBodyfile $CAreportDataHTML $NamedLocationsReportDataHTML" -PostContent "<p>Creation Date: $($Date)</p>"
             $report | Out-File "$Filename.html"
         }
     }

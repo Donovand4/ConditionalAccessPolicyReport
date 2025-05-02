@@ -3,6 +3,7 @@
 
 # Note
     The modules used in the script may still be in development and may change during the development cycle.
+    Both the Htmlbody are required for the HTML report to work. 
 
 # TO DO:
     Open to suggestions.
@@ -33,6 +34,8 @@
                 Add the new Insider Risk Condition.
     11 April 2025:
                 Added certificate authentication.
+    2 May 2025: 
+                Split out the CSS and HTML body into separate files to reduce the length of the script.
 
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
@@ -70,7 +73,8 @@
 
 # Outputs
     Exports .html and .csv files that contains the Conditional Access policies and Named Locations
-    When opening or importing the .csv file, ensure proper formatting by defining the delimiter as a semi-colon.
+    When opening or importing the .csv file, to ensure proper formatting set the delimiter as a semi-colon.
+    
     
 # Notes
     The script will connect to the Microsoft Graph service and collect the required information.     
