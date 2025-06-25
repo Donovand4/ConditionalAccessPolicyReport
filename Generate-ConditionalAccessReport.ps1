@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.6         Date Last Modified: 2 May 2025                #  
+#   Version 1.6         Date Last Modified: 25 June 2025                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 2 May 2025
+    Date Last Modified: 25 June 2025
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -77,6 +77,7 @@
       11 April 2025: Added certificate authentication support for the script.
       2 May 2025: Split out the CSS and HTML body into separate files to reduce the length of the script. 
       Both the Htmlbody are required for the HTML report to work. These files must be in the same directory as the script.
+	  25 June 2025: Updated the script to test for the HTML report requirements before generating the report for HTML reports.
  		
 
 .LINK
@@ -117,78 +118,59 @@ Begin {
     }
 
     if ($TenantID.Length -eq 0) {
-      try {
-          Write-Host "Trying to connect without tenant ID"
-          Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -NoWelcome
-      }
-      catch {
-          Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
-          Start-Sleep -Seconds 2
-          Exit
-      }
-  } elseif($TenantID -and !$usingCertAuth) {
-        try {
-            Write-Host "Trying to connect to tenant: $TenantID"
-            Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -TenantId $TenantID -NoWelcome
-        }
-        catch {
-            Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
-            Start-Sleep -Seconds 2
-            Exit
-        }
-    } elseif($TenantID -and $usingCertAuth) {
-      try {
-          Write-Host "Connecting to Microsoft Graph using App Registration..." -ForegroundColor Green
-     
-          # Normalize thumbprint (remove spaces, make uppercase for comparison)
-          $CertificateThumbprint = $CertificateThumbprint -replace '\s', '' | ForEach-Object { $_.ToUpper() }
+	try {
+		Write-Host "Trying to connect without tenant ID"
+		Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -NoWelcome
+	}
+	catch {
+		Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
+		Start-Sleep -Seconds 2
+		Exit
+	}
+	} elseif ($TenantID -and !$usingCertAuth) {
+		try {
+			Write-Host "Trying to connect to tenant: $TenantID"
+			Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All' -TenantId $TenantID -NoWelcome
+		}
+		catch {
+			Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
+			Start-Sleep -Seconds 2
+			Exit
+		}
+	} elseif ($TenantID -and $usingCertAuth) {
+		try {
+			Write-Host "Connecting to Microsoft Graph using App Registration..." -ForegroundColor Green
+		
+			# Normalize thumbprint (remove spaces, make uppercase for comparison)
+			$CertificateThumbprint = $CertificateThumbprint -replace '\s', '' | ForEach-Object { $_.ToUpper() }
 
-          # Try to find the cert in CurrentUser store
-          $cert = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $CertificateThumbprint }
+			# Try to find the cert in CurrentUser store
+			$cert = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $CertificateThumbprint }
 
-          if(!$cert){ 
-            $cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $CertificateThumbprint } 
-          }
+			if(!$cert){ 
+				$cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $CertificateThumbprint } 
+			}
 
-          if (-not $cert) {
-              Write-Host "Certificate with the given thumbprint not found in Current User or Local machine store" -ForegroundColor Red
-              Start-Sleep -Seconds 2
-              Exit
-          } else {
-              Write-Host "Certificate found. Continuing...`n" -ForegroundColor Green
-              Connect-MgGraph -ClientId $AppID -CertificateThumbprint $CertificateThumbprint -TenantId $TenantID -NoWelcome
-          }
-    }
-    catch {
-        Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
-        Start-Sleep -Seconds 2
-        Exit
-    }
-
-    }
+			if (-not $cert) {
+				Write-Host "Certificate with the given thumbprint not found in Current User or Local machine store" -ForegroundColor Red
+				Start-Sleep -Seconds 2
+				Exit
+			} else {
+				Write-Host "Certificate found. Continuing...`n" -ForegroundColor Green
+				Connect-MgGraph -ClientId $AppID -CertificateThumbprint $CertificateThumbprint -TenantId $TenantID -NoWelcome
+			}
+		}
+		catch {
+			Write-Host 'Login Failed. Exiting.......' -ForegroundColor Red
+			Start-Sleep -Seconds 2
+			Exit
+		}
+	}
     
     Write-Host 'Successfully Logged into Microsoft Graph' -ForegroundColor Green
     $Date = Get-Date -Format dd-MMMM-yyyy
     $Filename = "ConditionalAccessReport - $($Date)"
     $NamedLocationsFileName = "NamedLocations - $($Date)"
-
-
-    $ExternalStyle = get-content -path ".\Style.css" -Raw -ErrorAction SilentlyContinue ## Load the CSS file for formatting the HTML report
-    $StyleSheet = ("<style>`n") + $ExternalStyle + ("`n</style>")
-    $PageHeader = "<h1><center>Conditional Access Policies Report - $($date)</center></h1>"
-    $htmlBodyfile = get-content -Path ".\Htmlbody.txt" -Raw -ErrorAction SilentlyContinue ##Body format with filter scripts
-
-    if (-not $htmlBodyfile) {
-        Write-Host 'HTML body file not found. Exiting.......' -ForegroundColor Red
-        Start-Sleep -Seconds 2
-        Exit
-    }
-
-    if (-not $ExternalStyle) {
-        Write-Host 'CSS file not found. Exiting.......' -ForegroundColor Red
-        Start-Sleep -Seconds 2
-        Exit
-    }
     
     function Report-DirectoryApps {
         param (
@@ -303,6 +285,27 @@ Begin {
             }
         }
     }
+
+	function Test-HTMLRequirements{
+		Write-host "Testing for HTML required files..." -ForegroundColor Green
+
+		$ExternalStyle = get-content -path ".\Style.css" -Raw -ErrorAction SilentlyContinue ## Load the CSS file for formatting the HTML report
+		$StyleSheet = ("<style>`n") + $ExternalStyle + ("`n</style>")
+		$PageHeader = "<h1><center>Conditional Access Policies Report - $($date)</center></h1>"
+		$htmlBodyfile = get-content -Path ".\Htmlbody.txt" -Raw -ErrorAction SilentlyContinue ##Body format with filter scripts
+
+		if (-not $htmlBodyfile) {
+			Write-Host 'HTML body file not found. Exiting.......' -ForegroundColor Red
+			Start-Sleep -Seconds 2
+			Exit
+		}
+
+		if (-not $ExternalStyle) {
+			Write-Host 'CSS file not found. Exiting.......' -ForegroundColor Red
+			Start-Sleep -Seconds 2
+			Exit
+		}
+	}
 }
 
 process {
@@ -381,7 +384,9 @@ end {
 
     Write-Host '' 
     switch ($OutputFormat) {
-        'All' { 
+        'All' {
+			Test-HTMLRequirements
+
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
             $CAreportDataHTML = $ReportData | ConvertTo-Html -As Table -PreContent "<h1>Conditional Access Policies</h1>" -PostContent "<br>"
             $CAreportDataHTML = ($CAreportDataHTML.Replace("<table>", "<table id=`"myCATable`">"))
@@ -402,6 +407,8 @@ end {
             $ReportData | Export-Csv "$Filename.csv" -NoTypeInformation -Delimiter ";"
         }
         'HTML' {
+			Test-HTMLRequirements
+
             Write-Host "Generating the HTML Report. $($Filename.html)" -ForegroundColor Green
             $CAreportDataHTML = $ReportData | ConvertTo-Html -As Table -PreContent "<h1>Conditional Access Policies</h1>" -PostContent "<br>"
             $CAreportDataHTML = ($CAreportDataHTML.Replace("<table>", "<table id=`"myCATable`">"))
