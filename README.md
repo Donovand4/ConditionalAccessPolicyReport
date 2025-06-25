@@ -37,7 +37,7 @@
     2 May 2025: 
                 Split out the CSS and HTML body into separate files to reduce the length of the script.
 	25 June 2025:
-				Updated the script to test for the HTML report requirements before generating the report for HTML reports.
+		Updated the script to test for the HTML report requirements before generating the report for HTML reports.
 
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
