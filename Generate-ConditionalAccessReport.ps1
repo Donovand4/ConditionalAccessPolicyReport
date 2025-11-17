@@ -94,12 +94,12 @@ param (
     [Parameter(Mandatory = $False, Position = 3)] [string] $CertificateThumbprint
 )
 #Requires -Version 5.1
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.25.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.SignIns"; ModuleVersion = "2.25.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Applications"; ModuleVersion = "2.25.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Users"; ModuleVersion = "2.25.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Groups"; ModuleVersion = "2.25.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.DirectoryManagement"; ModuleVersion = "2.25.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.28.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.SignIns"; ModuleVersion = "2.28.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Applications"; ModuleVersion = "2.28.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Users"; ModuleVersion = "2.28.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Groups"; ModuleVersion = "2.28.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.DirectoryManagement"; ModuleVersion = "2.28.0" }
 Begin {
     Clear-Host
     Write-Host 'Importing the modules...'
@@ -354,6 +354,8 @@ process {
             'ApplicationIncludeUserActions'           = if ($pol.Conditions.Applications.IncludeUserActions) { $pol.Conditions.Applications.IncludeUserActions -join ',' } else { 'Not Configured' }
             'LocationIncludeLocations'                = if ($pol.Conditions.Locations.IncludeLocations) { ($pol.Conditions.Locations.IncludeLocations | ForEach-Object { Report-NamedLocations -ID $_ }) -join ',' } else { 'Not Configured' }
             'LocationExcludeLocations'                = if ($pol.Conditions.Locations.ExcludeLocations) { ($pol.Conditions.Locations.ExcludeLocations | ForEach-Object { Report-NamedLocations -ID $_ }) -join ',' } else { 'Not Configured' }
+            'AuthFlows'                               = if ($pol.conditions.authenticationflows.transfermethods) { $pol.conditions.authenticationflows.transfermethods -join ',' } else { 'Not Configured' }
+            'GrantAuthStrengths'                      = if ($pol.grantControls.authenticationstrength.displayname) { $pol.grantControls.authenticationstrength.displayname } else { 'Not Configured' }
             'GrantControlBuiltInControls'             = if ($pol.GrantControls.BuiltInControls) { $pol.GrantControls.BuiltInControls -join ',' } else { 'Not Configured' }
             'GrantControlTermsOfUse'                  = if ($pol.GrantControls.TermsOfUse) { $pol.GrantControls.TermsOfUse -join ',' } else { 'Not Configured' }
             'GrantControlOperator'                    = if ($pol.GrantControls.Operator) { $pol.GrantControls.Operator } else { 'Not Configured' }
@@ -366,6 +368,7 @@ process {
             'SignInFrequencyIsEnabled'                = if ($pol.SessionControls.SignInFrequency.IsEnabled) { $pol.SessionControls.SignInFrequency.IsEnabled } else { 'Not Configured' }
             'SignInFrequencyType'                     = if ($pol.SessionControls.SignInFrequency.Type) { $pol.SessionControls.SignInFrequency.Type } else { 'Not Configured' }
             'SignInFrequencyValue'                    = if ($pol.SessionControls.SignInFrequency.Value) { $pol.SessionControls.SignInFrequency.Value } else { 'Not Configured' }
+            'TokenProtectionIsEnabled'               = if ($pol.sessioncontrols.additionalproperties.secureSignInSession | Where-Object { $_.Keys -contains 'isEnabled' } | ForEach-Object { $_['isEnabled'] }) { sessioncontrols.additionalproperties.secureSignInSession | Where-Object { $_.Keys -contains 'isEnabled' } | ForEach-Object { $_['isEnabled'] } } else { 'Not Configured'
         }
     }
 }
@@ -377,10 +380,10 @@ end {
     UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,`
     ConditionUserRiskLevels,ConditionSignInRiskLevels,ConditionInsiderRiskLevels,ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DevicesFilterStatesMode,`
     DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,`
-    LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
+    LocationIncludeLocations,LocationExcludeLocations,AuthFlows,GrantAuthStrengths,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
     GrantControlCustomAuthFactors,AppEnforcedRestrictions,CloudAppSecurityType,`
     CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,`
-    SignInFrequencyType,SignInFrequencyValue | Sort-Object -Property Displayname
+    SignInFrequencyType,SignInFrequencyValue,TokenProtectionIsEnabled | Sort-Object -Property Displayname
 
     Write-Host '' 
     switch ($OutputFormat) {
