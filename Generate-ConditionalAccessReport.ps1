@@ -369,10 +369,10 @@ process {
             'SignInFrequencyType'                     = if ($pol.SessionControls.SignInFrequency.Type) { $pol.SessionControls.SignInFrequency.Type } else { 'Not Configured' }
             'SignInFrequencyValue'                    = if ($pol.SessionControls.SignInFrequency.Value) { $pol.SessionControls.SignInFrequency.Value } else { 'Not Configured' }
             'TokenProtectionIsEnabled'               = if ($pol.sessioncontrols.additionalproperties.secureSignInSession | Where-Object { $_.Keys -contains 'isEnabled' } | ForEach-Object { $_['isEnabled'] }) { sessioncontrols.additionalproperties.secureSignInSession | Where-Object { $_.Keys -contains 'isEnabled' } | ForEach-Object { $_['isEnabled'] } } else { 'Not Configured'
-        }
-    }
+	  }
+	}	
+  }
 }
-  
 end {
 
     Write-Host 'Generating the Reports.' -ForegroundColor Green
@@ -429,4 +429,5 @@ end {
 
     Disconnect-MgGraph
 }
+
 
