@@ -390,7 +390,7 @@ end {
     Write-Host 'Generating the Reports.' -ForegroundColor Green
     $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,`
     UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,IncludeGuestsOrExternalUsers,IncludeGuestsOrExternalUsersTypes,ExcludeGuestsOrExternalUsers,`
-    ExcludeGuestsOrExternalUsersTypes,ConditionUserRiskLevels,ConditionSignInRiskLevels,ConditionInsiderRiskLevels,ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DevicesFilterStatesMode,`
+    ExcludeGuestsOrExternalUsersTypes,ConditionUserRiskLevels,ConditionSignInRiskLevels,ConditionInsiderRiskLevels,ConditionsServicePrincipalRiskLevels,ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DevicesFilterStatesMode,`
     DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,ApplicationFilterMode,ApplicationFilterRule,ConditionIncludedSP,ConditionExcludedSP,ConditionSPFilter,ConditionSPFilterRule,`
     LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
     UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,`
