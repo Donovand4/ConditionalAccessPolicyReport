@@ -10,34 +10,36 @@
 
 # Updates:
 	25 Apr 2023: 
-                Added improved filtering to HTML report, updated module versions.
+        Added improved filtering to HTML report, updated module versions.
 	21 Jun 2023: 
-                Updated module version.
-                Improved module imports to reduce run time. 
-                Added All parameter for collecting policies. 
-                Default to beta profile for collecting policies. 
+        Updated module version.
+        Improved module imports to reduce run time. 
+        Added All parameter for collecting policies. 
+        Default to beta profile for collecting policies. 
 	16 Nov 2023: 
-                Updated module version.
-                Added named locations report.
+        Updated module version.
+        Added named locations report.
 	12 March 2024: 
-                Updated module version.
-                Added directory roles.
-                Aesolved some filtering issues for platforms.
+        Updated module version.
+        Added directory roles.
+        Aesolved some filtering issues for platforms.
 	28 November 2024: 
-                Added namded locations to the HTML form.
-                Updated the HTML table format.
+        Added namded locations to the HTML form.
+        Updated the HTML table format.
     11 February 2025:
-                Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
-                Added functionality to the tables to freeze the column headers when scrolling down.
+        Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
+        Added functionality to the tables to freeze the column headers when scrolling down.
     28 February 2025:
-                Added the missing User Risk Condition.
-                Add the new Insider Risk Condition.
+        Added the missing User Risk Condition.
+        Add the new Insider Risk Condition.
     11 April 2025:
-                Added certificate authentication.
+        Added certificate authentication.
     2 May 2025: 
-                Split out the CSS and HTML body into separate files to reduce the length of the script.
+        Split out the CSS and HTML body into separate files to reduce the length of the script.
 	25 June 2025:
 		Updated the script to test for the HTML report requirements before generating the report for HTML reports.
+    2 August 2026:
+        Updated the script with support for new Conditional Access features, new module version and improved commandlet names.
 
 # Description
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
@@ -46,12 +48,11 @@
 # Getting Started
     Below is a list of steps recommended to allow the report to authenticate and retrieve the information required.
     Steps:
-    1.  Download and install the Microsoft Graph PowerShell module by launching a PowerShell Console as Administrator 
-        and execute the below command:        
+    1.  Download and install the Microsoft Graph PowerShell module by launching a PowerShell Console as Administrator and execute the below command:        
             Install-Module Microsoft.Graph -AllowClobber -Force
             
     2.  Launch a PowerShell Console
-    3.  Run the below to authenticate to the Microsoft Graph PowerShell (Preview) Application that is added to Azure AD.
+    3.  Run the below to authenticate to the Microsoft Graph PowerShell (Preview) Application that is added to Entra ID.
             Connect-MgGraph -Scopes 'Policy.Read.All', 'Directory.Read.All'
             
     4.  Complete the authentication by following the device login prompts.

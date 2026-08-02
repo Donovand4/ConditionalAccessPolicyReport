@@ -22,14 +22,14 @@
 #   specified at http://www.microsoft.com/info/cpyright.htm.                # 
 #                                                                           #  
 #   Author: Donovan du Val                                                  #  
-#   Version 1.6         Date Last Modified: 11 November 2025                #  
+#   Version 1.6.1         Date Last Modified: 2 August 2026                #  
 #                                                                           #  
 #############################################################################  
 .SYNOPSIS
     PowerShell Script used to generate Conditional Access Policies report with named locations.
     Created by: Donovan du Val
     Creation Date: 13 May 2020
-    Date Last Modified: 11 November 2025
+    Date Last Modified: 2 August 2026
 .DESCRIPTION
     The script will generate a report for all the Conditional Access Policies and Named Locations used in the Entra ID Tenant.
 .EXAMPLE
@@ -59,25 +59,25 @@
     $MaximumVariableCount = 8192
 
     Updates:
-    	25 Apr 2023: Added improved filtering to HTML report, updated module versions.
-    	21 Jun 2023: Updated module version, 
-                  improved module imports to reduce run time, 
-                  added All parameter for collecting policies,
-                  default to beta profile for collecting policies. 
-    	16 Nov 2023: Updated module version, 
-                  added named locations report
-    	12 March 2024: Updated module version,
-                    Added directory roles,
-                    resolved some filtering issues for platforms.
-    	28 November 2024: Added namded locations to the HTML form,
-    			Updated the HTML table format.
-	11 February 2025: Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
- 			Added functionality to the tables to freeze the column headers when scrolling down.
-      28 February 2025: Added a user and insider risk conditions.
-      11 April 2025: Added certificate authentication support for the script.
-      2 May 2025: Split out the CSS and HTML body into separate files to reduce the length of the script. 
-      Both the Htmlbody are required for the HTML report to work. These files must be in the same directory as the script.
-	  25 June 2025: Updated the script to test for the HTML report requirements before generating the report for HTML reports.
+        25 Apr 2023: Added improved filtering to HTML report, updated module versions.
+        21 Jun 2023: 
+            Updated module version, 
+            improved module imports to reduce run time, 
+            added All parameter for collecting policies,
+            default to beta profile for collecting policies. 
+        16 Nov 2023: Updated module version, added named locations report
+        12 March 2024: Updated module version, Added directory roles, resolved some filtering issues for platforms.
+        28 November 2024: Added named locations to the HTML form, Updated the HTML table format.
+        11 February 2025: 
+            Added a LookupError filter for users and groups that are referenced but cannot be found in the tenant.
+            Added functionality to the tables to freeze the column headers when scrolling down.
+        28 February 2025: Added a user and insider risk conditions.
+        11 April 2025: Added certificate authentication support for the script.
+        2 May 2025: 
+            Split out the CSS and HTML body into separate files to reduce the length of the script. 
+            Both the Htmlbody are required for the HTML report to work. These files must be in the same directory as the script.
+        25 June 2025: Updated the script to test for the HTML report requirements before generating the report for HTML reports.
+        2 August 2026: Updated the script with support for new Conditional Access features, new module version and improved commandlet names.
  		
 
 .LINK
@@ -94,12 +94,12 @@ param (
     [Parameter(Mandatory = $False, Position = 3)] [string] $CertificateThumbprint
 )
 #Requires -Version 5.1
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.28.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.SignIns"; ModuleVersion = "2.28.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Applications"; ModuleVersion = "2.28.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Users"; ModuleVersion = "2.28.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Groups"; ModuleVersion = "2.28.0" }
-#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.DirectoryManagement"; ModuleVersion = "2.28.0" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Authentication"; ModuleVersion = "2.38.1" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.SignIns"; ModuleVersion = "2.38.1" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Applications"; ModuleVersion = "2.38.1" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Users"; ModuleVersion = "2.38.1" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Groups"; ModuleVersion = "2.38.1" }
+#Requires -Modules @{ ModuleName = "Microsoft.Graph.Identity.DirectoryManagement"; ModuleVersion = "2.38.1" }
 Begin {
     Clear-Host
     Write-Host 'Importing the modules...'
@@ -172,7 +172,7 @@ Begin {
     $Filename = "ConditionalAccessReport - $($Date)"
     $NamedLocationsFileName = "NamedLocations - $($Date)"
     
-    function Report-DirectoryApps {
+    function Resolve-DirectoryApps {
         param (
             [Parameter(Mandatory = $true)]
             [String[]]
@@ -196,7 +196,7 @@ Begin {
         }
     }
     
-    function Report-NamedLocations {
+    function Resolve-NamedLocations {
         param (
             [Parameter(Mandatory = $true)]
             [String[]]
@@ -227,7 +227,7 @@ Begin {
         }
     }
     
-    function Report-Users {
+    function Resolve-Users {
         param (
             [Parameter(Mandatory = $true)]
             [String[]]
@@ -248,7 +248,7 @@ Begin {
         }
     }
 
-    function Report-DirectoryRole {
+    function Resolve-DirectoryRole {
       param (
               [Parameter(Mandatory = $true)]
               [String[]]
@@ -265,7 +265,7 @@ Begin {
           }     
     }
     
-    function Report-Groups {
+    function Resolve-Groups {
         param (
             [Parameter(Mandatory = $true)]
             [String[]]
@@ -335,54 +335,71 @@ process {
             'ID'                                      = $pol.id
             'createdDateTime'                         = if ($pol.createdDateTime) { $pol.createdDateTime } else { 'Null' }
             'ModifiedDateTime'                        = if ($pol.ModifiedDateTime) { $pol.ModifiedDateTime } else { 'Null' }
-            'UserIncludeUsers'                        = if ($pol.Conditions.Users.IncludeUsers) { ($pol.Conditions.Users.IncludeUsers | ForEach-Object { (Report-Users -ID $_ ) }) -join ',' } else { 'Not Configured' }
-            'DirectoryRolesInclude'                   = if ($pol.Conditions.Users.IncludeRoles) { ($pol.Conditions.Users.IncludeRoles | ForEach-Object { (Report-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
-            'UserExcludeUsers'                        = if ($pol.Conditions.Users.ExcludeUsers) { ($pol.Conditions.Users.ExcludeUsers | ForEach-Object { (Report-Users -ID $_ ) }) -join ',' } else { 'Not Configured' } 
-            'DirectoryRolesExclude'                   = if ($pol.Conditions.Users.ExcludeRoles) { ($pol.Conditions.Users.ExcludeRoles | ForEach-Object { (Report-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
-            'UserIncludeGroups'                       = if ($pol.Conditions.Users.IncludeGroups) { ($pol.Conditions.Users.IncludeGroups | ForEach-Object { (Report-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
-            'UserExcludeGroups'                       = if ($pol.Conditions.Users.ExcludeGroups) { ($pol.Conditions.Users.ExcludeGroups | ForEach-Object { (Report-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'UserIncludeUsers'                        = if ($pol.Conditions.Users.IncludeUsers) { ($pol.Conditions.Users.IncludeUsers | ForEach-Object { (Resolve-Users -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'DirectoryRolesInclude'                   = if ($pol.Conditions.Users.IncludeRoles) { ($pol.Conditions.Users.IncludeRoles | ForEach-Object { (Resolve-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'UserExcludeUsers'                        = if ($pol.Conditions.Users.ExcludeUsers) { ($pol.Conditions.Users.ExcludeUsers | ForEach-Object { (Resolve-Users -ID $_ ) }) -join ',' } else { 'Not Configured' } 
+            'DirectoryRolesExclude'                   = if ($pol.Conditions.Users.ExcludeRoles) { ($pol.Conditions.Users.ExcludeRoles | ForEach-Object { (Resolve-DirectoryRole -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'UserIncludeGroups'                       = if ($pol.Conditions.Users.IncludeGroups) { ($pol.Conditions.Users.IncludeGroups | ForEach-Object { (Resolve-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'UserExcludeGroups'                       = if ($pol.Conditions.Users.ExcludeGroups) { ($pol.Conditions.Users.ExcludeGroups | ForEach-Object { (Resolve-Groups -ID $_ ) }) -join ',' } else { 'Not Configured' }
+            'IncludeGuestsOrExternalUsers'            = if ($pol.Conditions.Users.IncludeGuestsOrExternalUsers.externalTenants) { $pol.Conditions.Users.IncludeGuestsOrExternalUsers.externalTenants -join ',' } else { 'Not Configured' }
+            'IncludeGuestsOrExternalUsersTypes'       = if ($pol.Conditions.Users.IncludeGuestsOrExternalUsers.guestOrExternalUserTypes) { $pol.Conditions.Users.IncludeGuestsOrExternalUsers.guestOrExternalUserTypes -join ',' } else { 'Not Configured' }
+            'ExcludeGuestsOrExternalUsers'            = if ($pol.Conditions.Users.ExcludeGuestsOrExternalUsers.externalTenants) { $pol.Conditions.Users.ExcludeGuestsOrExternalUsers.externalTenants -join ',' } else { 'Not Configured' }
+            'ExcludeGuestsOrExternalUsersTypes'       = if ($pol.Conditions.Users.ExcludeGuestsOrExternalUsers.guestOrExternalUserTypes) { $pol.Conditions.Users.ExcludeGuestsOrExternalUsers.guestOrExternalUserTypes -join ',' } else { 'Not Configured' }
             'ConditionUserRiskLevels'                 = if ($pol.Conditions.UserRiskLevels) { $pol.Conditions.UserRiskLevels -join ',' } else { 'Not Configured' }
             'ConditionSignInRiskLevels'               = if ($pol.Conditions.SignInRiskLevels) { $pol.Conditions.SignInRiskLevels -join ',' } else { 'Not Configured' }
             'ConditionInsiderRiskLevels'              = if ($pol.Conditions.InsiderRiskLevels) { $pol.Conditions.InsiderRiskLevels -join ',' } else { 'Not Configured' }
+            'ConditionsServicePrincipalRiskLevels'    = if ($pol.Conditions.ServicePrincipalRiskLevels) { $pol.Conditions.ServicePrincipalRiskLevels -join ',' } else { 'Not Configured' }
             'ConditionClientAppTypes'                 = if ($pol.Conditions.ClientAppTypes) { $pol.Conditions.ClientAppTypes -join ',' } else { 'Not Configured' }
+            'ConditionIncludedSP'                     = if ($pol.Conditions.ClientApplications.IncludedServicePrincipals) { ($pol.Conditions.ClientApplications.IncludedServicePrincipals | ForEach-Object { Resolve-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
+            'ConditionExcludedSP'                     = if ($pol.Conditions.ClientApplications.ExcludedServicePrincipals) { ($pol.Conditions.ClientApplications.ExcludedServicePrincipals | ForEach-Object { Resolve-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
+            'ConditionSPFilter'                       = if ($pol.Conditions.ClientApplications.ServicePrincipalFilter.Mode) { $pol.Conditions.ClientApplications.ServicePrincipalFilter.Mode } else { 'Not Configured' }
+            'ConditionSPFilterRule'                   = if ($pol.Conditions.ClientApplications.ServicePrincipalFilter.Rule) { $pol.Conditions.ClientApplications.ServicePrincipalFilter.Rule } else { 'Not Configured' }
             'PlatformIncludePlatforms'                = if ($pol.conditions.platforms.IncludePlatforms) { $pol.conditions.platforms.IncludePlatforms -join ',' } else { 'Not Configured' }
             'PlatformExcludePlatforms'                = if ($pol.conditions.platforms.ExcludePlatforms) { $pol.conditions.platforms.ExcludePlatforms -join ',' } else { 'Not Configured' }
             'DevicesFilterStatesMode'                 = if ($pol.Conditions.Devices.DeviceFilter.Mode) {$pol.Conditions.Devices.DeviceFilter.Mode } else { 'Not Configured' } 
             'DevicesFilterStatesRule'                 = if ($pol.Conditions.Devices.DeviceFilter.Rule) {$pol.Conditions.Devices.DeviceFilter.Rule } else { 'Not Configured' }
-            'ApplicationIncludeApplications'          = if ($pol.Conditions.Applications.IncludeApplications) { ($pol.Conditions.Applications.IncludeApplications | ForEach-Object { Report-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
-            'ApplicationExcludeApplications'          = if ($pol.Conditions.Applications.ExcludeApplications) { ($pol.Conditions.Applications.ExcludeApplications | ForEach-Object { Report-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
+            'ApplicationIncludeApplications'          = if ($pol.Conditions.Applications.IncludeApplications) { ($pol.Conditions.Applications.IncludeApplications | ForEach-Object { Resolve-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
+            'ApplicationExcludeApplications'          = if ($pol.Conditions.Applications.ExcludeApplications) { ($pol.Conditions.Applications.ExcludeApplications | ForEach-Object { Resolve-DirectoryApps -AppID $_ }) -join ',' } else { 'Not Configured' }
             'ApplicationIncludeUserActions'           = if ($pol.Conditions.Applications.IncludeUserActions) { $pol.Conditions.Applications.IncludeUserActions -join ',' } else { 'Not Configured' }
-            'LocationIncludeLocations'                = if ($pol.Conditions.Locations.IncludeLocations) { ($pol.Conditions.Locations.IncludeLocations | ForEach-Object { Report-NamedLocations -ID $_ }) -join ',' } else { 'Not Configured' }
-            'LocationExcludeLocations'                = if ($pol.Conditions.Locations.ExcludeLocations) { ($pol.Conditions.Locations.ExcludeLocations | ForEach-Object { Report-NamedLocations -ID $_ }) -join ',' } else { 'Not Configured' }
+            'ApplicationFilterMode'                   = if ($pol.Conditions.Applications.ApplicationFilter.Mode) { $pol.Conditions.Applications.ApplicationFilter.Mode } else { 'Not Configured' }
+            'ApplicationFilterRule'                   = if ($pol.Conditions.Applications.ApplicationFilter.Rule) { $pol.Conditions.Applications.ApplicationFilter.Rule } else { 'Not Configured' }
+            'LocationIncludeLocations'                = if ($pol.Conditions.Locations.IncludeLocations) { ($pol.Conditions.Locations.IncludeLocations | ForEach-Object { Resolve-NamedLocations -ID $_ }) -join ',' } else { 'Not Configured' }
+            'LocationExcludeLocations'                = if ($pol.Conditions.Locations.ExcludeLocations) { ($pol.Conditions.Locations.ExcludeLocations | ForEach-Object { Resolve-NamedLocations -ID $_ }) -join ',' } else { 'Not Configured' }
             'AuthFlows'                               = if ($pol.conditions.authenticationflows.transfermethods) { $pol.conditions.authenticationflows.transfermethods -join ',' } else { 'Not Configured' }
             'GrantAuthStrengths'                      = if ($pol.grantControls.authenticationstrength.displayname) { $pol.grantControls.authenticationstrength.displayname } else { 'Not Configured' }
             'GrantControlBuiltInControls'             = if ($pol.GrantControls.BuiltInControls) { $pol.GrantControls.BuiltInControls -join ',' } else { 'Not Configured' }
             'GrantControlTermsOfUse'                  = if ($pol.GrantControls.TermsOfUse) { $pol.GrantControls.TermsOfUse -join ',' } else { 'Not Configured' }
             'GrantControlOperator'                    = if ($pol.GrantControls.Operator) { $pol.GrantControls.Operator } else { 'Not Configured' }
             'GrantControlCustomAuthFactors'           = if ($pol.GrantControls.CustomAuthenticationFactors) { $pol.GrantControls.CustomAuthenticationFactors -join ',' } else { 'Not Configured' }
+            'CloudAppSecurityIsEnabled'               = if ($pol.SessionControls.CloudAppSecurity.IsEnabled) { $pol.SessionControls.CloudAppSecurity.IsEnabled } else { 'Not Configured' }
             'CloudAppSecurityType'                    = if ($pol.SessionControls.CloudAppSecurity.CloudAppSecurityType) { $pol.SessionControls.CloudAppSecurity.CloudAppSecurityType } else { 'Not Configured' }
             'AppEnforcedRestrictions'                 = if ($pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled) { $pol.SessionControls.ApplicationEnforcedRestrictions.IsEnabled } else { 'Not Configured' }
-            'CloudAppSecurityIsEnabled'               = if ($pol.SessionControls.CloudAppSecurity.IsEnabled) { $pol.SessionControls.CloudAppSecurity.IsEnabled } else { 'Not Configured' }
             'PersistentBrowserIsEnabled'              = if ($pol.SessionControls.PersistentBrowser.IsEnabled) { $pol.SessionControls.PersistentBrowser.IsEnabled } else { 'Not Configured' }
             'PersistentBrowserMode'                   = if ($pol.SessionControls.PersistentBrowser.Mode) { $pol.SessionControls.PersistentBrowser.Mode } else { 'Not Configured' }
             'SignInFrequencyIsEnabled'                = if ($pol.SessionControls.SignInFrequency.IsEnabled) { $pol.SessionControls.SignInFrequency.IsEnabled } else { 'Not Configured' }
             'SignInFrequencyType'                     = if ($pol.SessionControls.SignInFrequency.Type) { $pol.SessionControls.SignInFrequency.Type } else { 'Not Configured' }
             'SignInFrequencyValue'                    = if ($pol.SessionControls.SignInFrequency.Value) { $pol.SessionControls.SignInFrequency.Value } else { 'Not Configured' }
+            'SignInFrequencyInterval'                  = if ($pol.SessionControls.SignInFrequency.Interval) { $pol.SessionControls.SignInFrequency.Interval } else { 'Not Configured' }
+            'disableResilienceDefaults'               = if ($pol.SessionControls.DisableResilienceDefaults) { $pol.SessionControls.DisableResilienceDefaults } else { 'Not Configured' }
             'TokenProtectionIsEnabled'               = if ($pol.sessioncontrols.additionalproperties.secureSignInSession | Where-Object { $_.Keys -contains 'isEnabled' } | ForEach-Object { $_['isEnabled'] }) { $pol.sessioncontrols.additionalproperties.secureSignInSession | Where-Object { $_.Keys -contains 'isEnabled' } | ForEach-Object { $_['isEnabled'] } } else { 'Not Configured' }
+        }
 	}	
-  }
 }
 end {
 
     Write-Host 'Generating the Reports.' -ForegroundColor Green
     $ReportData = $Report | Select-Object -Property Displayname,Description,State,ID,createdDateTime,ModifiedDateTime,`
+    UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,IncludeGuestsOrExternalUsers,IncludeGuestsOrExternalUsersTypes,ExcludeGuestsOrExternalUsers,`
+    ExcludeGuestsOrExternalUsersTypes,ConditionUserRiskLevels,ConditionSignInRiskLevels,ConditionInsiderRiskLevels,ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DevicesFilterStatesMode,`
+    DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,ApplicationFilterMode,ApplicationFilterRule,ConditionIncludedSP,ConditionExcludedSP,ConditionSPFilter,ConditionSPFilterRule,`
+    LocationIncludeLocations,LocationExcludeLocations,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
     UserIncludeUsers,UserExcludeUsers,DirectoryRolesInclude,DirectoryRolesExclude,UserIncludeGroups,UserExcludeGroups,`
     ConditionUserRiskLevels,ConditionSignInRiskLevels,ConditionInsiderRiskLevels,ConditionClientAppTypes, PlatformIncludePlatforms, PlatformExcludePlatforms, DevicesFilterStatesMode,`
     DevicesFilterStatesRule,ApplicationIncludeApplications,ApplicationExcludeApplications,ApplicationIncludeUserActions,`
     LocationIncludeLocations,LocationExcludeLocations,AuthFlows,GrantAuthStrengths,GrantControlBuiltInControls,GrantControlTermsOfUse,GrantControlOperator,`
     GrantControlCustomAuthFactors,AppEnforcedRestrictions,CloudAppSecurityType,`
     CloudAppSecurityIsEnabled,PersistentBrowserIsEnabled,PersistentBrowserMode,SignInFrequencyIsEnabled,`
-    SignInFrequencyType,SignInFrequencyValue,TokenProtectionIsEnabled | Sort-Object -Property Displayname
+    SignInFrequencyType,SignInFrequencyValue,SignInFrequencyInterval,disableResilienceDefaults,TokenProtectionIsEnabled | Sort-Object -Property Displayname
 
     Write-Host '' 
     switch ($OutputFormat) {
